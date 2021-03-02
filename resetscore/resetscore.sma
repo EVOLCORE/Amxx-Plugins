@@ -1,4 +1,3 @@
-
 #include <amxmodx>
 #include <reapi>
 
