@@ -19,7 +19,7 @@ new awp[MAX_CLIENTS+1];
 new g_Vault;
 
 public plugin_init() {
-	register_plugin("AWP Menu", "1.0", "mIDnight");
+	register_plugin("[ReAPI] AWP Menu", "1.0", "mIDnight");
 
 	register_clcmd("nightvision","@AWP_Menu");
 	register_clcmd("say /awpmenu", "@AWP_Menu");
@@ -39,7 +39,7 @@ public client_connect(id) {
     LoadData(id);
 }
 
-public client_disconnected(id ){
+public client_disconnected(id) {
     SaveData(id);
 }
 
@@ -125,7 +125,7 @@ public Market_Menu_Handler(id, Menu, Item) {
 	return PLUGIN_HANDLED;
 }
 
-public ChangeWeapon(id)  {
+public ChangeWeapon(id) {
 	new weaponID = get_user_weapon(id);
 
 	if(weaponID == CSW_AWP) {
@@ -177,4 +177,4 @@ LoadData(id) {
     new szAuth[33];
     get_user_authid(id , szAuth , charsmax(szAuth));
     awp[id] = nvault_get(g_Vault,szAuth);
-}   
+} 
