@@ -15,13 +15,13 @@ new g_iChanges[33];
 
 public plugin_init() {
 	register_plugin("[ReAPI] Anti bad words", PLUGIN_VERSION, "mIDnight");
+	register_dictionary("anti_advertisments.txt")
 	register_clcmd("say", "@HookSay");
 	register_clcmd("say_team", "@HookSay");
 	register_clcmd("amx_chat", "@HookSay");
 	
 	register_cvar("anti_advertisments", PLUGIN_VERSION, FCVAR_SERVER|FCVAR_SPONLY|FCVAR_UNLOGGED)
-	RegisterHookChain(RG_CBasePlayer_SetClientUserInfoName, "@OnUserChangeName")
-	register_dictionary("anti_advertisments.txt")
+	RegisterHookChain(RG_CBasePlayer_SetClientUserInfoName, "@CBasePlayer_SetClientUserInfoName")
 	g_pAdminFlag = register_cvar("nnc_admin_flag", "")
 	g_pMaxChanges = register_cvar("nnc_max_changes", "3")
 	CC_SetPrefix("&x04[Element]")
@@ -92,7 +92,7 @@ public client_disconnected(id) {
 	CC_SendMessage(id, "%L", id, "GAG_EXPIRED")
 }
 
-@OnUserChangeName(const id, const iBuffer, const szNewName[]) {
+@CBasePlayer_SetClientUserInfoName(const id, const iBuffer, const szNewName[]) {
 	if(g_iAdminFlag && get_user_flags(id) & g_iAdminFlag)
 		return HC_CONTINUE
 		
