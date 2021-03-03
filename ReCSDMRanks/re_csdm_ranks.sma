@@ -84,11 +84,11 @@ public client_putinserver(pPlayer) {
 	}
 
 	set_task(1.0, "@ShowHudmessage", pPlayer, .flags = "b");
-}
+}	
 
 @ShowHudmessage(const pPlayer) {
 	set_hudmessage(210, 105, 30, 0.01, 0.15, 0, _, 1.0, 0.1, 0.1);
-	ShowSyncHudMsg(pPlayer, hud_sync, "[ Element CSDM FFA ]^n[ Rank: %s ]^n[ Rank Xp: %i/%i ]", szRankNames[g_rank[pPlayer]][Rank_Name], g_xp[pPlayer], szRankNames[g_rank[pPlayer]][Rank_MaxXp]);
+	ShowSyncHudMsg(pPlayer, hud_sync, "[ Name: %n ]^n[ Rank: %s ]^n[ Rank Xp: %i/%i ]", pPlayer, szRankNames[g_rank[pPlayer]][Rank_Name], g_xp[pPlayer], szRankNames[g_rank[pPlayer]][Rank_MaxXp]);
 }
 
 @CBasePlayer_Killed(const pVictim, pAttacker, iGib) {
