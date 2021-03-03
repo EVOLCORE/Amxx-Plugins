@@ -1,0 +1,9 @@
+[en]
+CSDM_SETTINGS_TITLE = \ySettings Menu ( \r/menu\y )
+CSDM_ONLY_HS = \wMod: Only Headshot
+CSDM_FADE_SCREEN = \wEffect: Screen Fade
+CSDM_BULLET_DAMAGE = \wHud: Bullet Damage
+CSDM_HEADSHOT_MSG = \wHud: Headshot
+CSDM_ALL_KILLS = \wHud: All Kills
+CSDM_BONUS_HP = \wBonus: +HP
+CSDM_CHAT_AD = ^4[Element]^1 To open the player settings menu, say: ^4/menu^1 or press ^4N^1!
