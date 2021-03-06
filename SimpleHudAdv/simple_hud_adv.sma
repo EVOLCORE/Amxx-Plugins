@@ -5,12 +5,12 @@ public plugin_init() {
 }	
 
 public client_putinserver(id) {
-	set_task(2.5, "@hud_info");
+	set_task(2.0, "@hud_info", _, _, _, "b");
 }
 
 @hud_info(id) {
 	if(get_playersnum() > 0) {
-		set_hudmessage(255, 255, 255, -1.0, 0.0, 1, 6.0, 10000.0)
-		show_hudmessage(id, "87.98.189.86:27015")
+		set_dhudmessage(255, 255, 255, -1.0, 0.0, 0, 6.0, 10000.0)
+		show_dhudmessage(id, "ADD IP: 87.98.189.86:27015")
 	}
 }	
