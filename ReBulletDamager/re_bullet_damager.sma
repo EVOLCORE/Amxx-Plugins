@@ -16,7 +16,7 @@ public plugin_init() {
 
 @OnPlayerTakeDamagePost(const iVictim, iInflictor, iAttacker, Float:fDamage, bitsDamageType) {
 	if(!IsPlayer(iVictim) || !IsPlayer(iAttacker) || iVictim == iAttacker || get_user_team(iVictim) == get_user_team(iAttacker));
-		return HC_CONTINUE
+		return HC_CONTINUE;
 
 	new iDamage[4]
 	float_to_str(fDamage, iDamage, charsmax(iDamage));
@@ -28,5 +28,5 @@ public plugin_init() {
 		show_hudmessage(iAttacker, "%s", iDamage);
 	}
 	
-	return HC_CONTINUE
+	return HC_CONTINUE;
 }
