@@ -1,9 +1,9 @@
 #include <amxmodx>
 
-new rounds_elapsed;
+new rounds_elapsed
 
 public plugin_init() { 
-	register_plugin( "Server info", "1.2", "mIDnight")
+	register_plugin("Server info", "1.2", "mIDnight")
 	
 	register_event("HLTV", "@round_start", "a", "1=0", "2=0")
 	register_event("TextMsg", "@round_restart", "a", "2=#Game_will_restart_in")
@@ -17,7 +17,7 @@ public plugin_init() {
 	rounds_elapsed = 0 
 	
 @round_start() { 
-	rounds_elapsed += 1;
+	rounds_elapsed += 1
      
 	new mapname[32], nextmap[32], players[32], player ,maxrounds, maxplayers
 	
