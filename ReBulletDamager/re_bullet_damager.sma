@@ -13,7 +13,7 @@ public plugin_init() {
 	RegisterHookChain(RG_CBasePlayer_TakeDamage, "@CBasePlayer_TakeDamagePost", true);
 }
 
-@CBasePlayer_TakeDamagePost(iVictim, iInflictor, iAttacker, Float:fDamage, bitsDamageType) {
+@CBasePlayer_TakeDamagePost(const iVictim, iInflictor, iAttacker, Float:fDamage, bitsDamageType) {
 	if(!IsPlayer(iVictim) || !IsPlayer(iAttacker) || iVictim == iAttacker || get_user_team(iVictim) == get_user_team(iAttacker))
 	return HC_CONTINUE
 
