@@ -10,10 +10,10 @@ new g_iSize = sizeof(g_flCoords);
 
 public plugin_init() {
 	register_plugin("[ReAPI] Bullet Damage", "1.0", "mIDnight");
-	RegisterHookChain(RG_CBasePlayer_TakeDamage, "@CBasePlayer_TakeDamagePost", true);
+	RegisterHookChain(RG_CBasePlayer_TakeDamage, "@CBasePlayer_TakeDamage_Post", true);
 }
 
-@CBasePlayer_TakeDamagePost(const iVictim, iInflictor, iAttacker, Float:fDamage, bitsDamageType) {
+@CBasePlayer_TakeDamage_Post(const iVictim, iInflictor, iAttacker, Float:fDamage, bitsDamageType) {
 	if(!IsPlayer(iVictim) || !IsPlayer(iAttacker) || iVictim == iAttacker || get_user_team(iVictim) == get_user_team(iAttacker))
 	return HC_CONTINUE
 
