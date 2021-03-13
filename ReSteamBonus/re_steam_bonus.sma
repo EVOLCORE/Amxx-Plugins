@@ -51,10 +51,10 @@ GiveGrenades(id) {
 
 GiveArmor(id) {
 	rg_set_user_armor(id, 100, ARMOR_VESTHELM)
-	client_print_color(id, print_team_default, "^x04[Element] ^x01+ steam bonuses - ^x03armor")
+	client_print_color(id, print_team_default, "^x04[Element] ^x01+ steam bonus - ^x03armor")
 }
 
 GiveMoney(id, amount) {
 	rg_add_account(id, amount)    
-	client_print_color(id, print_team_default, "^x04[Element] ^x01+ steam bonuses - ^x03%d$", amount)
+	client_print_color(id, print_team_default, "^x04[Element] ^x01+ steam bonus - ^x03%d$", amount)
 }
