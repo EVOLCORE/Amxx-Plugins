@@ -6,10 +6,10 @@ new g_iPlayerPos[33];
 
 public plugin_init() {
 	register_plugin("[ReAPI] Bullet Damager", "1.1", "mIDnight");
-	RegisterHookChain(RG_CBasePlayer_TakeDamage, "@OnPlayerTakeDamage_Post", true);
+	RegisterHookChain(RG_CBasePlayer_TakeDamage, "@CBasePlayer_TakeDamage_post", true);
 }	
 
-@OnPlayerTakeDamage_Post(const iVictim, iInflictor, iAttacker, Float:fdamage) {
+@CBasePlayer_TakeDamage_post(const iVictim, iInflictor, iAttacker, Float:fdamage) {
 	if(is_user_connected(iAttacker) && rg_is_player_can_takedamage(iAttacker, iVictim)) {
 		static g_iDamage;
 		g_iDamage = floatround(fdamage, floatround_floor);
