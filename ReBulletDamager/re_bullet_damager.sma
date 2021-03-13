@@ -10,7 +10,6 @@ new g_iSize = sizeof(g_flCoords);
 
 public plugin_init() {
 	register_plugin("[ReAPI] Bullet Damage", "1.0", "mIDnight");
-	
 	RegisterHookChain(RG_CBasePlayer_TakeDamage, "@OnPlayerTakeDamagePost", true);
 }
 
