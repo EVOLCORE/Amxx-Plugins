@@ -27,6 +27,5 @@ public plugin_init() {
 		set_hudmessage(random_num(0, 255), random_num(0, 255), random_num(0, 255), Float:g_flCoords[g_iPosition[iAttacker]][0], Float:g_flCoords[g_iPosition[iAttacker]][1], 0, 0.1, 1.5, 0.02, 0.02);
 		show_hudmessage(iAttacker, "%s", iDamage);
 	}
-	
 	return HC_CONTINUE;
 }
