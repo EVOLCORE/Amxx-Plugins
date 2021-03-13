@@ -10,21 +10,22 @@ new g_iSize = sizeof(g_flCoords);
 
 public plugin_init() {
 	register_plugin("[ReAPI] Bullet Damage", "1.0", "mIDnight");
-	RegisterHookChain(RG_CBasePlayer_TakeDamage, "@OnPlayerTakeDamagePost", true);
+	RegisterHookChain(RG_CBasePlayer_TakeDamage, "@CBasePlayer_TakeDamagePost", true);
 }
 
-@OnPlayerTakeDamagePost(const iVictim, iInflictor, iAttacker, Float:fDamage, bitsDamageType) {
-	if(!IsPlayer(iVictim) || !IsPlayer(iAttacker) || iVictim == iAttacker || get_user_team(iVictim) == get_user_team(iAttacker));
-		return HC_CONTINUE;
+@CBasePlayer_TakeDamagePost(iVictim, iInflictor, iAttacker, Float:fDamage, bitsDamageType) {
+	if(!IsPlayer(iVictim) || !IsPlayer(iAttacker) || iVictim == iAttacker || get_user_team(iVictim) == get_user_team(iAttacker))
+	return HC_CONTINUE
 
 	new iDamage[4]
-	float_to_str(fDamage, iDamage, charsmax(iDamage));
-	replace_all(iDamage, charsmax(iDamage), ".", "") {
-		if(++g_iPosition[iAttacker] == g_iSize);
-      		g_iPosition[iAttacker] = 0
-    
-		set_hudmessage(random_num(0, 255), random_num(0, 255), random_num(0, 255), Float:g_flCoords[g_iPosition[iAttacker]][0], Float:g_flCoords[g_iPosition[iAttacker]][1], 0, 0.1, 1.5, 0.02, 0.02);
-		show_hudmessage(iAttacker, "%s", iDamage);
+	float_to_str(fDamage, iDamage, charsmax(iDamage))
+	replace_all(iDamage, charsmax(iDamage), ".", "")
+	{
+		if(++g_iPosition[iAttacker] == g_iSize)
+		g_iPosition[iAttacker] = 0
+
+		set_hudmessage(random_num(0, 255), random_num(0, 255), random_num(0, 255), Float:g_flCoords[g_iPosition[iAttacker]][0], Float:g_flCoords[g_iPosition[iAttacker]][1], 0, 0.1, 1.5, 0.02, 0.02)
+		show_hudmessage(iAttacker, "%s", iDamage)
 	}
-	return HC_CONTINUE;
+	return HC_CONTINUE
 }
