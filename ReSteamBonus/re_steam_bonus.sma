@@ -29,8 +29,8 @@ public plugin_init() {
 	g_iRCount = 0;
 	
 	if(++g_iRCount % BONUS_RND)
-	DisableHookChain(g_hookSpawn);
-	else	EnableHookChain(g_hookSpawn);
+	DisableHookChain(g_hookSpawn)
+	else	EnableHookChain(g_hookSpawn)
 }
 
 @CBasePlayer_Spawn_Post(id) {
