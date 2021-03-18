@@ -1,27 +1,41 @@
 #include <amxmodx>
 #include <reapi>
 
-#define VIP_FLAG ADMIN_LEVEL_H
+const BONUS_RND 	= 2
 
 new playersTurn[33]
+new g_iRCount
 new bool: hasBombSite
+new HookChain:g_hookSpawn
 
 public plugin_init() {
 	register_plugin("[ReAPI] Steam Bonus", "1.2", "mIDnight")
 
-	RegisterHookChain(RG_CBasePlayer_Spawn, "@CBasePlayer_Spawn_Post", true)
+	new iMap_Name[32], iMap_Prefix[][] = { "awp_", "fy_", "35hp" }
+	get_mapname(iMap_Name, charsmax(iMap_Name))
+	for(new i; i < sizeof(iMap_Prefix); i++) {
+		if(containi(iMap_Name, iMap_Prefix[i]) != -1)
+		pause("ad")
+	}
+
+	RegisterHookChain(RG_CSGameRules_RestartRound, 	"@CSGameRules_RestartRound_Pre", false)
+	g_hookSpawn = RegisterHookChain(RG_CBasePlayer_Spawn, "@CBasePlayer_Spawn_Post", true)
 	if (rg_find_ent_by_class(-1, "func_bomb_target") > 0 || rg_find_ent_by_class(-1, "info_bomb_target") > 0)
 	hasBombSite = true
 }
 
+@CSGameRules_RestartRound_Pre() {
+	if(get_member_game(m_bCompleteReset))
+	g_iRCount = 0;
+	
+	if(++g_iRCount % BONUS_RND)
+	DisableHookChain(g_hookSpawn);
+	else	EnableHookChain(g_hookSpawn);
+}
+
 @CBasePlayer_Spawn_Post(id) {
 	if (is_user_alive(id) && is_user_steam(id)) {
-		if (playersTurn[id] == 0)
-		{
-			if (get_user_flags(id) & VIP_FLAG) {
-				GiveMoney(id, 400)
-			}
-			else 
+		if (playersTurn[id] == 0) {
 			GiveGrenades(id)
 
 			++playersTurn[id]
@@ -31,7 +45,7 @@ public plugin_init() {
 			++playersTurn[id]            
 		}
 		else if (playersTurn[id] == 2) {
-			GiveMoney(id, 400)
+			GiveRandomMoney(id)
 			playersTurn[id] = 0
 		}
 
@@ -45,16 +59,16 @@ GiveGrenades(id) {
 	rg_give_item(id, "weapon_flashbang", GT_REPLACE)
 	rg_set_user_bpammo(id, WEAPON_FLASHBANG, 2)
 	rg_give_item(id, "weapon_hegrenade")
-
-	client_print_color(id, print_team_default, "^x04[Element] ^x01+ steam bonus - ^x03grenades")
+	client_print_color(id, print_team_default, "^x04[Element] ^x01You received^x03 grenades ^x01for using steam version of game.")
 }
 
 GiveArmor(id) {
 	rg_set_user_armor(id, 100, ARMOR_VESTHELM)
-	client_print_color(id, print_team_default, "^x04[Element] ^x01+ steam bonus - ^x03armor")
+	client_print_color(id, print_team_default, "^x04[Element] ^x01You received^x03 armor ^x01for using steam version of game.")
 }
 
-GiveMoney(id, amount) {
-	rg_add_account(id, amount)    
-	client_print_color(id, print_team_default, "^x04[Element] ^x01+ steam bonus - ^x03%d$", amount)
+GiveRandomMoney(id) {
+	new iMoney = random_num(200, 1000)
+	rg_add_account(id, iMoney);   
+	client_print_color(id, print_team_default, "^x04[Element] ^x01You received^x03%d$ ^x01for using steam version of game.", iMoney)
 }
