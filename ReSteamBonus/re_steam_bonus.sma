@@ -59,16 +59,16 @@ GiveGrenades(id) {
 	rg_give_item(id, "weapon_flashbang", GT_REPLACE)
 	rg_set_user_bpammo(id, WEAPON_FLASHBANG, 2)
 	rg_give_item(id, "weapon_hegrenade")
-	client_print_color(id, print_team_default, "^x04[Element] ^x01You received^x03 grenades ^x01for using steam version of game.")
+	client_print_color(id, print_team_default, "^4[Element] ^1You received^3 grenades ^1for using steam version of game.")
 }
 
 GiveArmor(id) {
 	rg_set_user_armor(id, 100, ARMOR_VESTHELM)
-	client_print_color(id, print_team_default, "^x04[Element] ^x01You received^x03 armor ^x01for using steam version of game.")
+	client_print_color(id, print_team_default, "^4[Element] ^1You received^3 armor ^1for using steam version of game.")
 }
 
 GiveRandomMoney(id) {
 	new iMoney = random_num(200, 1000)
 	rg_add_account(id, iMoney);   
-	client_print_color(id, print_team_default, "^x04[Element] ^x01You received^x03%d$ ^x01for using steam version of game.", iMoney)
+	client_print_color(id, print_team_default, "^4[Element] ^1You received ^3%d$ ^1for using steam version of game.", iMoney)
 }
