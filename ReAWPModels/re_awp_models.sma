@@ -1,6 +1,7 @@
 #include <amxmodx>
 #include <reapi>
 #include <nvault>
+
 #pragma semicolon 1
 #pragma dynamic 32768	
 
@@ -47,26 +48,21 @@ public client_disconnected(id) {
 	static Item[128];
 
 	formatex(Item, charsmax(Item), "\d[\r%s\d] \w|| \yAWP Skin Menu",TAG);
-	new Menu = menu_create(Item, "Market_Menu_Handler");
+	new Menu = menu_create(Item, "@Menu_Handler");
 
 	formatex(Item, charsmax(Item), "\y|\r%s\y| \d- \wDragon Lore",TAG),menu_additem(Menu, Item, "1");
-
 	formatex(Item, charsmax(Item), "\y|\r%s\y| \d- \wAbstract",TAG),menu_additem(Menu, Item, "2");
-
 	formatex(Item, charsmax(Item), "\y|\r%s\y| \d- \wCyrex",TAG),menu_additem(Menu, Item, "3");
-
 	formatex(Item, charsmax(Item), "\y|\r%s\y| \d- \wPhobos",TAG),menu_additem(Menu, Item, "4");
-
 	formatex(Item, charsmax(Item), "\y|\r%s\y| \d- \wAsiimov",TAG),menu_additem(Menu, Item, "5");
-
 	formatex(Item, charsmax(Item), "\y|\r%s\y| \d- \wTiger",TAG),menu_additem(Menu, Item, "6"); 
-
 	formatex(Item, charsmax(Item), "\y|\r%s\y| \d- \wAwp Default^n",TAG),menu_additem(Menu, Item, "7"); 
-
 	formatex(Item, charsmax(Item), "\y|\r%s\y| \w- \wExit", TAG), menu_setprop(Menu, MPROP_EXITNAME, Item), menu_display(id, Menu, 0);
+
+	return PLUGIN_HANDLED;
 }
 
-public Market_Menu_Handler(id, Menu, Item) {
+@Menu_Handler(id, Menu, Item) {
 	if(Item == MENU_EXIT) {
 		menu_destroy(Menu);
 		return PLUGIN_HANDLED;
@@ -125,7 +121,7 @@ public Market_Menu_Handler(id, Menu, Item) {
 	return PLUGIN_HANDLED;
 }
 
-public ChangeWeapon(id) {
+ChangeWeapon(id) {
 	new weaponID = get_user_weapon(id);
 
 	if(weaponID == CSW_AWP) {
@@ -177,4 +173,4 @@ LoadData(id) {
     new szAuth[33];
     get_user_authid(id , szAuth , charsmax(szAuth));
     awp[id] = nvault_get(g_Vault,szAuth);
-} 
+}
