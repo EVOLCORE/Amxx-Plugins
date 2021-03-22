@@ -37,7 +37,6 @@ public plugin_init() {
 	if (is_user_alive(id) && is_user_steam(id)) {
 		if (playersTurn[id] == 0) {
 			GiveGrenades(id)
-
 			++playersTurn[id]
 		}
 		else if (playersTurn[id] == 1) {
