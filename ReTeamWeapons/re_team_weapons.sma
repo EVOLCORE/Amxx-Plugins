@@ -3,16 +3,14 @@
 
 public plugin_init() {
 	register_plugin("[ReAPI] Team Weapons", "1.0", "mIDnight");
-	RegisterHookChain(RG_CBasePlayer_Spawn, "@CBasePlayer_Spawn", .post=true);
+	RegisterHookChain(RG_CBasePlayer_Spawn, "@CBasePlayer_Spawn_post", .post = true);
 }
 
-@CBasePlayer_Spawn(id) {
+@CBasePlayer_Spawn_post(id) {
 	if(!is_user_alive(id)) return;
-	rg_remove_all_items(id);
-	rg_give_item(id, "weapon_knife");
 	rg_give_item(id, "weapon_awp");
 	rg_set_user_bpammo(id, WEAPON_AWP, 30);
-	rg_give_item(id, "weapon_deagle");
+	rg_give_item(id, "weapon_deagle", GT_REPLACE);
 	rg_set_user_bpammo(id, WEAPON_DEAGLE, 35);
 	rg_give_item(id, "weapon_hegrenade");
 	switch(get_member(id, m_iTeam)) {
