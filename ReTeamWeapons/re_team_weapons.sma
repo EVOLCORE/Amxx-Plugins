@@ -4,10 +4,11 @@
 public plugin_init() {
 	register_plugin("[ReAPI] Team Weapons", "1.0", "mIDnight");
 	RegisterHookChain(RG_CBasePlayer_Spawn, "@CBasePlayer_Spawn_post", .post = true);
+	register_cvar("tw_disable", "0");
 }
 
 @CBasePlayer_Spawn_post(id) {
-	if(!is_user_alive(id)) return;
+	if(!is_user_alive(id) || get_cvar_num("tw_disable")) return;
 	rg_give_item(id, "weapon_awp");
 	rg_set_user_bpammo(id, WEAPON_AWP, 30);
 	rg_give_item(id, "weapon_deagle", GT_REPLACE);
