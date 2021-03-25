@@ -9,7 +9,7 @@ new bool: hasBombSite
 new HookChain:g_hookSpawn
 
 public plugin_init() {
-	register_plugin("[ReAPI] Steam Bonus", "1.2", "mIDnight")
+	register_plugin("[ReAPI] Steam Bonus", "1.4", "mIDnight")
 
 	new iMap_Name[32], iMap_Prefix[][] = { "awp_", "fy_", "35hp" }
 	get_mapname(iMap_Name, charsmax(iMap_Name))
