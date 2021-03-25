@@ -18,15 +18,22 @@ public plugin_init() {
 		pause("ad")
 	}
 
-	RegisterHookChain(RG_CSGameRules_RestartRound, 	"@CSGameRules_RestartRound_Pre", false)
-	g_hookSpawn = RegisterHookChain(RG_CBasePlayer_Spawn, "@CBasePlayer_Spawn_Post", true)
+	RegisterHookChain(RG_HandleMenu_ChooseTeam, "@HandleMenu_ChooseTeam_Post", .post = true)
+	RegisterHookChain(RG_CSGameRules_RestartRound, 	"@CSGameRules_RestartRound_Pre", .post = false)
+	g_hookSpawn = RegisterHookChain(RG_CBasePlayer_Spawn, "@CBasePlayer_Spawn_Post", .post = true)
 	if (rg_find_ent_by_class(-1, "func_bomb_target") > 0 || rg_find_ent_by_class(-1, "info_bomb_target") > 0)
 	hasBombSite = true
 }
 
+@HandleMenu_ChooseTeam_Post(const id, const MenuChooseTeam:slot) {
+	if (is_user_steam(id)) return
+
+	client_print_color(id, id, "^4[Element]^1 Welcome ^3%n^1 you will recive prizes for using STEAM.", id)
+}
+
 @CSGameRules_RestartRound_Pre() {
 	if(get_member_game(m_bCompleteReset))
-	g_iRCount = 0;
+	g_iRCount = 0
 	
 	if(++g_iRCount % BONUS_RND)
 	DisableHookChain(g_hookSpawn)
@@ -68,6 +75,6 @@ GiveArmor(id) {
 
 GiveRandomMoney(id) {
 	new iMoney = random_num(200, 1000)
-	rg_add_account(id, iMoney);   
+	rg_add_account(id, iMoney)
 	client_print_color(id, print_team_default, "^4[Element] ^1You received ^3%d$ ^1for using steam version of game.", iMoney)
 }
