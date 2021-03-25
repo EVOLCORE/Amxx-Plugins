@@ -26,7 +26,7 @@ public plugin_init() {
 }
 
 @HandleMenu_ChooseTeam_Post(const id, const MenuChooseTeam:slot) {
-	if (is_user_steam(id)) return
+	if (is_user_steam(id))
 	client_print_color(id, id, "^4[Element]^1 Welcome ^3%n^1 you will recive prizes for using STEAM.", id)
 }
 
