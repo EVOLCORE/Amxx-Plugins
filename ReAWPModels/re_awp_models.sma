@@ -1,175 +1,160 @@
-#include <amxmodx>
-#include <reapi>
-#include <nvault>
-
 #pragma semicolon 1
-#pragma dynamic 32768	
 
-new const Awp1[] = "models/awp_models/v_awp_dragonlore.mdl";
-new const Awp2[] = "models/awp_models/v_awp_abstract.mdl";
-new const Awp3[] = "models/awp_models/v_awp_cyrex.mdl";
-new const Awp4[] = "models/awp_models/v_awp_phobos.mdl";
-new const Awp5[] = "models/awp_models/v_awp_asiimov.mdl";
-new const Awp6[] = "models/awp_models/v_awp_tiger.mdl";
-new const AwpD[] = "models/v_awp.mdl"; 	//DEFAULT AWP
+#include <amxmodx>
+#include <nvault>
+#include <reapi>
 
-#define SayTag "^4Element"
-new const TAG[] = "Element";
+#define	var_wmodel	var_targetname
 
-new awp[MAX_CLIENTS+1];
-new g_Vault;
+new const g_szWeaponFile[] = "models/awp_models";
+
+new const g_szWeaponNames[][] = {
+	"Default",
+	"DragonLore",
+	"Abstract",
+	"Cyrex",
+	"Phobos",
+	"Asiimov",
+	"Tiger"
+};
+
+new const g_szTag[] = "Element";
+
+new g_iAwp[MAX_CLIENTS + 1],
+	g_iMenu,
+	g_iVault;
 
 public plugin_init() {
-	register_plugin("[ReAPI] AWP Menu", "1.0", "mIDnight");
+	register_plugin("[ReAPI] AWP menu", "1.1", "mIDnight");
 
-	register_clcmd("nightvision","@AWP_Menu"); register_clcmd("say /awpmenu", "@AWP_Menu");
-	register_event("CurWeapon", "ChangeWeapon", "be", "1=1");
+	register_clcmd("say /awp", "@clcmd_awp"); register_clcmd("nightvision", "@clcmd_awp");
+
+	RegisterHookChain(RG_CBasePlayerWeapon_DefaultDeploy, "@CBasePlayerWeapon_DefaultDeploy_Pre", .post = false);
+	RegisterHookChain(RG_CWeaponBox_SetModel, "@CWeaponBox_SetModel_Pre", .post = false);
+	RegisterHookChain(RG_CBasePlayer_AddPlayerItem, "@RG_CBasePlayer_AddPlayerItem_Post", .post = true);
+
+	@menu_awp();
 }
 
 public plugin_precache() {
-    precache_model(Awp1);
-    precache_model(Awp2);
-    precache_model(Awp3);
-    precache_model(Awp4);
-    precache_model(Awp5);
-    precache_model(Awp6);
+	for(new i = 1; i < sizeof(g_szWeaponNames); i++) {
+		precache_model(fmt("%s/v_%s.mdl", g_szWeaponFile, g_szWeaponNames[i]));
+		precache_model(fmt("%s/p_%s.mdl", g_szWeaponFile, g_szWeaponNames[i]));
+		precache_model(fmt("%s/w_%s.mdl", g_szWeaponFile, g_szWeaponNames[i]));
+	}
 }
 
-public client_connect(id) {
-    LoadData(id);
-}
-
-public client_disconnected(id) {
-    SaveData(id);
-}
-
-@AWP_Menu(id) {
-	static Item[128];
-
-	formatex(Item, charsmax(Item), "\d[\r%s\d] \w|| \yAWP Skin Menu",TAG);
-	new Menu = menu_create(Item, "@Menu_Handler");
-
-	formatex(Item, charsmax(Item), "\y|\r%s\y| \d- \wDragon Lore",TAG),menu_additem(Menu, Item, "1");
-	formatex(Item, charsmax(Item), "\y|\r%s\y| \d- \wAbstract",TAG),menu_additem(Menu, Item, "2");
-	formatex(Item, charsmax(Item), "\y|\r%s\y| \d- \wCyrex",TAG),menu_additem(Menu, Item, "3");
-	formatex(Item, charsmax(Item), "\y|\r%s\y| \d- \wPhobos",TAG),menu_additem(Menu, Item, "4");
-	formatex(Item, charsmax(Item), "\y|\r%s\y| \d- \wAsiimov",TAG),menu_additem(Menu, Item, "5");
-	formatex(Item, charsmax(Item), "\y|\r%s\y| \d- \wTiger",TAG),menu_additem(Menu, Item, "6"); 
-	formatex(Item, charsmax(Item), "\y|\r%s\y| \d- \wAwp Default^n",TAG),menu_additem(Menu, Item, "7"); 
-	formatex(Item, charsmax(Item), "\y|\r%s\y| \w- \wExit", TAG), menu_setprop(Menu, MPROP_EXITNAME, Item), menu_display(id, Menu, 0);
-
+@clcmd_awp(const pPlayer) {
+	menu_display(pPlayer, g_iMenu);
 	return PLUGIN_HANDLED;
 }
 
-@Menu_Handler(id, Menu, Item) {
-	if(Item == MENU_EXIT) {
-		menu_destroy(Menu);
+@menu_awp() {
+	g_iMenu = menu_create(fmt("\d[\r%s\d] \w|| \yAWP Skin Menu", g_szTag), "@menu_awp_handler");
+
+	for(new i = 0; i < sizeof(g_szWeaponNames); i++) {
+		menu_additem(g_iMenu, fmt("\y|\r%s\y| \d- \w%s", g_szTag, g_szWeaponNames[i]));
+	}
+
+	menu_setprop(g_iMenu, MPROP_EXITNAME, fmt("\y|\r%s\y| \w- \wExit", g_szTag));
+}
+
+@menu_awp_handler(const pPlayer, const iMenu, const iItem) {
+	if(iItem == MENU_EXIT) {
 		return PLUGIN_HANDLED;
 	}
-	
-	new Access, Data[6], Menu_Name[64], Call_Back;
-	menu_item_getinfo(Menu, Item, Access, Data, 5, Menu_Name, 63, Call_Back);
-	new Key = str_to_num(Data);
-	
-	switch(Key)
-	{
-		case 1: {
-			awp[id] = 1;
-			ChangeWeapon(id);
-			client_cmd(id,"spk ^"events/enemy_died^"");
-			client_print_color(id, 0, "^4[%s]^1 Successful ^3Dragon Lore ^1Activated!", SayTag);
-		}   
-		case 2: {
-			awp[id] = 2;
-			ChangeWeapon(id);
-			client_cmd(id,"spk ^"events/enemy_died^"");
-			client_print_color(id, 0, "^4[%s]^1 Successful ^3Abstract ^1Activated!", SayTag);
-		}
-		case 3: {
-			awp[id] = 3;
-			ChangeWeapon(id);
-			client_cmd(id,"spk ^"events/enemy_died^"");
-			client_print_color(id, 0, "^4[%s]^1 Successful ^3Cyrex ^1Activated!", SayTag);
-		}
-		case 4: {
-			awp[id] = 4;
-			ChangeWeapon(id);
-			client_cmd(id,"spk ^"events/enemy_died^"");
-			client_print_color(id, 0, "^4[%s]^1 Successful ^3Phobos ^1Activated!", SayTag);
-		}
-		case 5: {
-			awp[id] = 5;
-			ChangeWeapon(id);
-			client_cmd(id,"spk ^"events/enemy_died^"");
-			client_print_color(id, 0, "^4[%s]^1 Successful ^3Asiimov ^1Activated!", SayTag);
-		}
-		case 6: {
-			awp[id] = 6;
-			ChangeWeapon(id);
-			client_cmd(id,"spk ^"events/enemy_died^"");
-			client_print_color(id, 0, "^4[%s]^1 Successful ^3Tiger ^1Activated!", SayTag);
-		}
-		case 7: {
-			awp[id] = 7;
-			ChangeWeapon(id);
-			client_cmd(id,"spk ^"events/enemy_died^"");
-			client_print_color(id, 0, "^4[%s]^1 Successful ^3AWP Default ^1Activated!", SayTag);
-		}
+
+	g_iAwp[pPlayer] = iItem;
+	rg_send_audio(pPlayer, "events/enemy_died.wav");
+	client_print_color(pPlayer, 0, "^4[%s] ^1Model ^3%s ^1has been successfully activated.", g_szTag, g_szWeaponNames[iItem]);
+
+	if(rg_has_item_by_name(pPlayer, "weapon_awp")) {
+		new iAmmo = rg_get_user_ammo(pPlayer, WEAPON_AWP);
+		new iBpAmmo = rg_get_user_bpammo(pPlayer, WEAPON_AWP);
+
+		rg_remove_item(pPlayer, "weapon_awp");
+
+		new iWeapon = rg_give_custom_item(pPlayer, "weapon_awp", GT_APPEND, iItem);
+		rg_set_user_ammo(pPlayer, WEAPON_AWP, iAmmo);
+		rg_set_user_bpammo(pPlayer, WEAPON_AWP, iBpAmmo);
 	}
-	menu_destroy(Menu);
+
 	return PLUGIN_HANDLED;
 }
 
-public ChangeWeapon(id) {
-	new weaponID = get_user_weapon(id);
+@CBasePlayerWeapon_DefaultDeploy_Pre(const iWeapon, szViewModel[], szWeaponModel[], iAnim, szAnimExt[], skiplocal) {
+	if(get_member(iWeapon, m_iId) != WEAPON_AWP) {
+		return;
+	}
 
-	if(weaponID == CSW_AWP) {
-	switch(awp[id]){
-		case 1 : {
-				set_entvar(id,var_viewmodel,Awp1);
-			}
-		case 2 : {
-				set_entvar(id,var_viewmodel,Awp2);
-			}
-		case 3 : {
-				set_entvar(id,var_viewmodel,Awp3);
-			}
-		case 4 : {
-				set_entvar(id,var_viewmodel,Awp4);
-			}
-		case 5 : {
-				set_entvar(id,var_viewmodel,Awp5);
-			}
-		case 6 : {
-				set_entvar(id,var_viewmodel,Awp6);
-			}
-		case 7 : {
-				set_entvar(id,var_viewmodel,AwpD);
-			}
+	new pPlayer = get_member(iWeapon, m_pPlayer);
+
+	new iAwpModel = g_iAwp[pPlayer];
+
+	if(iAwpModel > 0) {
+		SetHookChainArg(2, ATYPE_STRING, fmt("%s/v_%s.mdl", g_szWeaponFile, g_szWeaponNames[iAwpModel]));
+		SetHookChainArg(3, ATYPE_STRING, fmt("%s/p_%s.mdl", g_szWeaponFile, g_szWeaponNames[iAwpModel]));
+	}
+}
+
+@CWeaponBox_SetModel_Pre(const iWeaponBox, const szModelName[]) {
+	new iWeapon = GetWeaponBoxWeapon(iWeaponBox);
+
+	if(iWeapon == NULLENT || get_member(iWeapon, m_iId) != WEAPON_AWP) {
+		return;
+	}
+
+	new iImpulse = get_entvar(iWeapon, var_impulse);
+
+	if(iImpulse > 0) {
+		SetHookChainArg(2, ATYPE_STRING, fmt("%s/w_%s.mdl", g_szWeaponFile, g_szWeaponNames[iImpulse]));
+	}
+}
+
+GetWeaponBoxWeapon(const iWeaponBox) {
+	for(new i = 0, iWeapon; i < MAX_ITEM_TYPES; i++) {
+	
+		iWeapon = get_member(iWeaponBox, m_WeaponBox_rgpPlayerItems, i);
+
+		if(!is_nullent(iWeapon)) {
+			return iWeapon;
 		}
+	}
+	return NULLENT;
+}
+
+@RG_CBasePlayer_AddPlayerItem_Post(const pPlayer, const iWeapon) {
+	if(is_nullent(iWeapon) || get_member(iWeapon, m_iId) != WEAPON_AWP) {
+		return;
+	}
+
+	new wmodel[32];
+	get_entvar(iWeapon, var_wmodel, wmodel, charsmax(wmodel));
+
+	if(wmodel[0] == EOS && g_iAwp[pPlayer] > 0) {
+		set_entvar(iWeapon, var_wmodel, fmt("%s/w_%s.mdl", g_szWeaponFile, g_szWeaponNames[g_iAwp[pPlayer]]));
 	}
 }
 
 public plugin_cfg() {
-    g_Vault = nvault_open("Players_AWP_Models");
-    
-    if ( g_Vault == INVALID_HANDLE )
-        set_fail_state( "File Not Found!" )  ;  
+	g_iVault = nvault_open("Players_AWP_Models");
+
+	if(g_iVault == INVALID_HANDLE) {
+		set_fail_state("Vault error");
+	}
 }
 
 public plugin_end() {
-    nvault_close(g_Vault);
+	nvault_close(g_iVault);
 }
 
-SaveData(id) {
-    new szAuth[33],szData[6];
-    get_user_authid(id , szAuth , charsmax(szAuth));
-    num_to_str(awp[id],szData,5);
-    nvault_pset(g_Vault,szAuth ,szData); 
+public client_authorized(pPlayer, const szAuthid[]) {
+	g_iAwp[pPlayer] = nvault_get(g_iVault, szAuthid);
 }
 
-LoadData(id) {
-    new szAuth[33];
-    get_user_authid(id , szAuth , charsmax(szAuth));
-    awp[id] = nvault_get(g_Vault,szAuth);
-}  
+public client_disconnected(pPlayer) {
+	new szAuthid[MAX_AUTHID_LENGTH];
+	get_user_authid(pPlayer, szAuthid, charsmax(szAuthid));
+
+	nvault_pset(g_iVault, szAuthid, fmt("%i", g_iAwp[pPlayer]));
+}
