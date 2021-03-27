@@ -44,8 +44,8 @@ public client_disconnected(pPlayer) {
 }
 
 @ShowHudmessage(const pPlayer) {
-	set_dhudmessage(0, 255, 0, 0.02, 0.35, 0, _, 1.1);
-	show_dhudmessage(pPlayer, "Kills: %i (%i HS)", g_iKills[pPlayer], g_iHSKills[pPlayer]);
+	set_dhudmessage(255, 0, 0, 0.94, 0.20, 0, _, 1.1);
+	show_dhudmessage(pPlayer, "%i(%i)", g_iKills[pPlayer], g_iHSKills[pPlayer]);
 }
 
 RemoveHud(const pPlayer) {
