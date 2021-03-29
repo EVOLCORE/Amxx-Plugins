@@ -13,10 +13,10 @@ public plugin_init() {
 
 public client_putinserver(pPlayer) {
 	if(get_user_flags(pPlayer) & ADMIN_KICK) {
-		return PLUGIN_CONTINUE;
+		return PLUGIN_HANDLED;
 	}
 	rg_join_team(pPlayer, rg_get_join_team_priority());
-	return PLUGIN_CONTINUE;
+	return PLUGIN_HANDLED;
 }
 
 @clcmd_spec(const pPlayer) {
