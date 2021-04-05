@@ -3,14 +3,13 @@
 
 public plugin_init() {
 	register_plugin("[ReAPI] Team Weapons", "1.0", "mIDnight");
-	RegisterHookChain(RG_CBasePlayer_Spawn, "@CBasePlayer_Spawn_post", .post = true);
-	register_cvar("tw_disable", "0");
+	
+	RegisterHookChain(RG_CBasePlayer_Spawn, "@CBasePlayer_Spawn_Post", .post = true);
 }
 
-@CBasePlayer_Spawn_post(id) {
-	if(!is_user_alive(id) || get_cvar_num("tw_disable")) return;
-	rg_give_item(id, "weapon_awp");
-	rg_set_user_bpammo(id, WEAPON_AWP, 30);
+@CBasePlayer_Spawn_Post(id) {
+	if(!checkTime(23, 8) || !is_user_alive(id))
+		return;
 	rg_give_item(id, "weapon_deagle", GT_REPLACE);
 	rg_set_user_bpammo(id, WEAPON_DEAGLE, 35);
 	rg_give_item(id, "weapon_hegrenade");
@@ -24,4 +23,9 @@ public plugin_init() {
 			rg_set_user_bpammo(id, WEAPON_AK47, 90);
 		}
 	}
+}
+
+bool:checkTime(iStart, iEnd) {
+	new iHour; time(iHour);
+	return !! bool:(iStart < iEnd ? (iStart <= iHour < iEnd) : (iStart <= iHour || iHour < iEnd));
 }
