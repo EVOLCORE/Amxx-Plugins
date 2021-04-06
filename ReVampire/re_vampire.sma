@@ -8,10 +8,10 @@
 public plugin_init() {
 	register_plugin("[ReAPI] Vampire", "1.1", "mIDnight");
 
-	RegisterHookChain(RG_CBasePlayer_Killed, "RG_Player_Killed_Post", .post = true);
+	RegisterHookChain(RG_CBasePlayer_Killed, "@RG_Player_Killed_Post", .post = true);
 }
 
-public RG_Player_Killed_Post(const iVictim, iAttacker) {
+@RG_Player_Killed_Post(const iVictim, iAttacker) {
 	if(!is_user_connected(iAttacker) || iVictim == iAttacker)
 		return;
 	
