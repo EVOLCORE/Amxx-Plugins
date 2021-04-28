@@ -4,6 +4,9 @@ CW_PRINT_ID_GAME_NOT_STARTED = ^4[Element] ^1Game is not started.
 CW_PRINT_ID_TAKE_ADMIN = ^4[Element]^1 Say ^3/admin^1 to get admin privileges.
 CW_PRINT_ID_OPEN_MENU = ^4[Element]^1 Say ^3/menu^1 or press^3 N^1 key to open admin menu.
 CW_PRINT_ID_MENU_OPEN = ^4[Element]^1 Only admins have access to menu, type ^3/admin^1 to gain access.
+CW_PRINT_ID_SAY = ^4[Element]^1 Say is disabled, if you like to talk to admins use "say_team @" or "u@"
+CW_PRINT_ID_SAY_ENABLED = ^4[Element]^1 Say has been enabled, now you can talk each others.
+CW_PRINT_ID_SAY_DISABLED = ^4[Element]^1 Say has been disabled, now you cannot use say.
 
 CW_PRINT_ALL_KNIFE_ROUND_STARTED = ^4[Element] ^1Knife round started.
 CW_PRINT_ALL_CHOSE_SWITCH = ^4[Element] ^3%n ^1chose to switch.
