@@ -21,7 +21,7 @@ g_iVotes[2];
 new bool:b_talk = false;
 
 public plugin_init() {
-	register_plugin("CW Core", "1.2", "mIDnight");
+	register_plugin("[ReAPI] CW Core", "1.2", "mIDnight");
 	register_dictionary("cw_core.txt");
 
 	register_clcmd("say /menu", "@clcmd_cw");
