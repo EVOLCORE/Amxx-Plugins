@@ -18,8 +18,10 @@ Array:g_aCW;
 new g_szCvar_Sv_Password[32],
 g_iVotes[2];
 
+new bool:b_talk = false;
+
 public plugin_init() {
-	register_plugin("[ReAPI] CW core", "1.1", "mIDnight");
+	register_plugin("CW Core", "1.2", "mIDnight");
 	register_dictionary("cw_core.txt");
 
 	register_clcmd("say /menu", "@clcmd_cw");
@@ -28,6 +30,7 @@ public plugin_init() {
 	register_clcmd("changemap", "@clcmd_changemap");
 	register_clcmd("setpassword", "@clcmd_setpassword");
 	register_clcmd("joinclass", "@clcmd_joinedclass");
+	register_clcmd("say","@clcmd_say");
 
 	register_forward(FM_ClientKill, "@ClientKill_Pre", ._post = false);
 
@@ -62,6 +65,14 @@ public client_disconnected(id) {
 	if(!iCount) {
 		set_pcvar_string(get_cvar_pointer("sv_password"), "");
 	}		
+}
+
+@clcmd_say(const pPlayer) {
+	if(b_talk) {
+		client_print_color(pPlayer, pPlayer, "%L", LANG_PLAYER, "CW_PRINT_ID_SAY");
+		return PLUGIN_HANDLED;
+	}
+	return PLUGIN_CONTINUE;
 }		
 
 @clcmd_cw(const pPlayer) {
@@ -142,7 +153,9 @@ public client_disconnected(id) {
 	menu_additem(iMenu, "Kick Player");
 	menu_additem(iMenu, "Ban Player");
 	menu_additem(iMenu, "Move Player");
-
+	if(b_talk) menu_additem(iMenu, "Enable say");
+	else menu_additem(iMenu, "Disable say");
+	
 	menu_display(pPlayer, iMenu);
 }
 
@@ -156,6 +169,17 @@ public client_disconnected(id) {
 		}
 		case 2: {
 			client_cmd(pPlayer, "amx_teammenu");
+		}
+		case 3: {
+			if(b_talk) {
+				b_talk = false;
+				client_print_color(pPlayer, pPlayer, "%L", LANG_PLAYER, "CW_PRINT_ID_SAY_ENABLED");
+			}
+			else {
+				b_talk = true;
+				client_print_color(pPlayer, pPlayer, "%L", LANG_PLAYER, "CW_PRINT_ID_SAY_DISABLED");
+			}
+			@cw_adminmenu(pPlayer);
 		}
 	}
 	menu_destroy(iMenu);
