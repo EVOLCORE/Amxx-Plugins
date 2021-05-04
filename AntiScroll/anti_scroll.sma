@@ -19,13 +19,10 @@ public fw_CmdStart(id, pUC, seed) {
 				g_bUseScroll[id] = false
 			}
 		}
-		else
-		{
-			if(!g_bUseScroll[id])
-			{
+		else {
+			if(!g_bUseScroll[id]) {
 				static Float:fGameTime; fGameTime = get_gametime()
-				if(fGameTime - g_fDuckTime[id] < 0.02) // 0.015, 0.02, 0.03
-				{
+				if(fGameTime - g_fDuckTime[id] < 0.02) {
 					static Float:fVelocity[3]
 					
 					pev(id, pev_velocity, fVelocity)
