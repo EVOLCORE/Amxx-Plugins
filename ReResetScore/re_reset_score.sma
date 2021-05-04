@@ -3,10 +3,10 @@
 
 public plugin_init() {
 	register_plugin("[ReAPI] Reset Score", "1.0", "mIDnight");
-	register_clcmd("say /rs", "@CmdRs"); register_clcmd("say_team /rs", "@CmdRs");
+	register_clcmd("say /rs", "@clcmd_rs"); register_clcmd("say_team /rs", "@clcmd_rs");
 }
 
-@CmdRs(id) {
+@clcmd_rs(id) {
 	set_entvar(id, var_frags, 0.0); set_member(id, m_iDeaths, 0);
 	client_print_color(id, id, "^4[Element]^1 You successfully restarted your score!");
 	
