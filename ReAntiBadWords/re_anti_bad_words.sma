@@ -2,8 +2,6 @@
 #include <cromchat>
 #include <reapi>
 
-#define PLUGIN_VERSION "1.2"
-
 new const FILE[] = "addons/amxmodx/configs/forbidden_words.ini";
 
 new Read_All[100][64];
@@ -14,13 +12,12 @@ new g_iAdminFlag, g_iMaxChanges
 new g_iChanges[33];
 
 public plugin_init() {
-	register_plugin("[ReAPI] Anti bad words", PLUGIN_VERSION, "mIDnight");
-	register_dictionary("anti_advertisments.txt")
+	register_plugin("[ReAPI] Anti bad words", "1.3", "mIDnight");
+	register_dictionary("forbidden_words.txt")
 	register_clcmd("say", "@HookSay");
 	register_clcmd("say_team", "@HookSay");
 	register_clcmd("amx_chat", "@HookSay");
 	
-	register_cvar("anti_advertisments", PLUGIN_VERSION, FCVAR_SERVER|FCVAR_SPONLY|FCVAR_UNLOGGED)
 	RegisterHookChain(RG_CBasePlayer_SetClientUserInfoName, "@CBasePlayer_SetClientUserInfoName")
 	g_pAdminFlag = register_cvar("nnc_admin_flag", "")
 	g_pMaxChanges = register_cvar("nnc_max_changes", "3")
@@ -41,8 +38,7 @@ public plugin_precache() {
 	}
 }
 
-public plugin_cfg()
-{
+public plugin_cfg() {
 	new szFlag[2]
 	get_pcvar_string(g_pAdminFlag, szFlag, charsmax(szFlag))
 	g_iAdminFlag = read_flags(szFlag)
@@ -61,8 +57,7 @@ public client_disconnected(id) {
 }
 
 @HookSay(id) {
-	if(GaG[id])
-	{
+	if(GaG[id]) {
 		CC_SendMessage(id, "%L", id, "GAG_MSG")
 		return PLUGIN_HANDLED;
 	}
@@ -79,7 +74,7 @@ public client_disconnected(id) {
 			GaG[id] = true;
 			CC_SendMessage(0, "%L", 0, "GAG_WORD",Name)
 			CC_SendMessage(id, "%L", id, "GAG_GAGGED")
-			set_task(120.0, "@Gag_ID_False", id);
+			set_task(30.0, "@Gag_ID_False", id);
 			
 			return PLUGIN_CONTINUE;
 		}
@@ -94,8 +89,8 @@ public client_disconnected(id) {
 
 @CBasePlayer_SetClientUserInfoName(const id, const iBuffer, const szNewName[]) {
 	if(g_iAdminFlag && get_user_flags(id) & g_iAdminFlag)
-		return HC_CONTINUE
-		
+	return HC_CONTINUE
+	
 	if(g_iChanges[id] < g_iMaxChanges) {
 		g_iChanges[id]++
 		
