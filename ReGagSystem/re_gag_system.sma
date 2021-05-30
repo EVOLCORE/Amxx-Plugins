@@ -41,7 +41,7 @@ public plugin_init() {
 		client_print_color(id, id, "%s ^1You are not authorized to use this command.", iChatTag);
 		return PLUGIN_HANDLED;
 	}
-	new menu = menu_create(fmt("\w[\rElement\w] \ySelect player to gag"), "clcmd_gagmenu_");
+	new menu = menu_create(fmt("\w[\rElement\w] \ySelect player to gag"), "@clcmd_gagmenu_");
 
 	for(new i = 1; i <= MaxClients; i++) {
 		if(!is_user_connected(i) || is_user_bot(i) || get_user_flags(i) & ADMIN_IMMUNITY) {
@@ -54,7 +54,7 @@ public plugin_init() {
 	return PLUGIN_HANDLED;
 }
 
-public clcmd_gagmenu_(id, menu, item) {
+@clcmd_gagmenu_(id, menu, item) {
 	if(item == MENU_EXIT) {
 		menu_destroy(menu);
 		return PLUGIN_HANDLED;
