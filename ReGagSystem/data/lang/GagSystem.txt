@@ -1,0 +1,14 @@
+[en]
+GAG_UNAUTHORIZED = %s ^1You are not authorized to use this command.
+GAG_PLAYER_UNSELECTED = %s ^1You cannot gag without selecting the player.
+GAG_PLAYERNAME_EMPTY = %s ^1You cannot leave the player name blank.
+GAG_PLAYER_NOGAG = %s ^1The specified player does not have a gag.
+GAG_ALREADY_ACTIVE = %s ^1The designated player already has a gag.
+GAG_PLAYER_UNGAG = %s ^1^1ADMIN: ^4%n ^1has ungagged player ^3%n^1.
+GAG_PLAYER_GAG = %s ^1ADMIN: ^4%n ^1has gagged ^3%n^1 on ^3%i ^1Seconds.
+GAG_TIME_IS_SMALL = %s ^1You must enter the gag time greater than 0.
+GAG_NOPLAYER = %s ^1Couldn't find player to gag..
+GAG_PLAYER_IMMUNITY = %s ^1The selected player has immunity.
+GAG_PLAYER_HAS_GAG = %s ^1You are gagged^3 %i^1 seconds left before ungag.
+GAG_TIMEEND = %s ^1Gag time for player ^3%n ^1is over, he can talk now.
+GAG_NO_NAME_CHANGE = %s ^1Gagged players cannot change their names.
