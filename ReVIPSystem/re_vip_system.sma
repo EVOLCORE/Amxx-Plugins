@@ -7,9 +7,9 @@
 
 #define VIP_ACCESS      ADMIN_LEVEL_H      // VIP access flag (default flag "t" ADMIN_LEVEL_H)
 #define PREFIX          "^4[Element]^1"    // Prefix before messages (^ 1 - yellow ^ 3 - command color ^ 4 - green)
-#define NIGHT_MODE							// Night mode free vip
+#define NIGHT_MODE			   // Night mode free vip
 #define VIPROUND        3                  // From which round you can open the VIP menu
-#define AWPRND      	999                  // From which round are AWP and machine gun available
+#define AWPRND      	999                // From which round are AWP and machine gun available
 #define BONUS_HS        10.0               // The amount of added HP per kill in the head (set to 0.0 if you don't need to add, since you can't comment out)
 #define BONUS_NORMAL    5.0                // The number of added HP per kill (set to 0.0 if you do not need to add, since you cannot comment out)
 #define MAX_HP          100.0              // Max HP
@@ -19,15 +19,15 @@
 #define ROUND_DEAGLE    1                  // From which round to give deagle (if VIPAUTODEAGLE is uncommented, otherwise it makes no sense to change it will not work)
 #define ROUND_ARMOR     2                  // From which round to give armor
 #define ROUND_DEFUSE    2                  // From which round to give defuse kit
-#define AUTOVIPMENU                        // Automatically open the VIP menu at the beginning of the round (disabled by default)
-//#define VIPTAB                             // Show VIP status in the table on the tab (comment if not necessary)
-#define ADMIN_LOADER                       // Deadline to end with Admin Loader by Neugomon (comment if not needed)
-#define DAMAGER                            // damager ladder (comment if necessary)
-#define FIFTH_ITEM                         // 5th point in vipka switching the damager by pressing (uncomment if necessary + uncomment DAMAGER)
+#define AUTOVIPMENU                        // Automatically open the VIP menu at the beginning of the round (enabled by default)
+//#define VIPTAB                           // Show VIP status in the table on the tab (comment if not necessary)
+#define ADMIN_LOADER                       // VIP time period to end with Admin Loader by Neugomon (comment if not needed)
+#define DAMAGER                            // Damager ladder (comment if necessary)
+#define FIFTH_ITEM                         // 5th point in VIP menu switching the damager by pressing (uncomment if necessary + uncomment DAMAGER)
 
 #if defined NIGHT_MODE
-#define START_HOUR 		22					// Hour night mode start
-#define END_HOUR 		8					// Hour night mode end
+#define START_HOUR 		22	   // Hour night mode start
+#define END_HOUR 		8	  // Hour night mode end
 
 new bool:IsNightMode;
 #endif
