@@ -6,10 +6,11 @@
 #define TAG "Element"
 
 new bool:dmcontrol, timeset = false;
-new sv_restart, mp_forcerespawn, mp_buytime, mp_give_player_c4, mp_infinite_ammo, bh_enabled, mp_round_infinite;
+new sv_restart, mp_forcerespawn, mp_buytime, mp_give_player_c4, mp_infinite_ammo, mp_round_infinite;
 new New_Date_Minute , New_Date_Hour , New_Date_Day , New_Date_Month , New_Date_Year
 new Difference_Minute , Difference_Hour , Difference_Day , Difference_Month , Difference_Year
 new VaultFile, Float:dmstart, Float:dmend
+new g_szServerIP[32];
 
 public plugin_natives() {
 	register_native("get_dynamic_time", "_get_dynamic_time")
@@ -28,12 +29,17 @@ bool:Player_Access(id) {
 	if(set_entvar(id, var_flags) & ADMIN_RCON)
 		return true
 	else 	return false
-	
 }
 
 public plugin_init() {
 	register_plugin("[ReAPI] DeathMatch mode", "1.0", "mIDnight");
 	register_dictionary("re_deathmatch_mode.txt")
+
+	get_user_ip(0, g_szServerIP, charsmax(g_szServerIP));
+	
+	if(!equal(g_szServerIP, "103.153.157.22:27015")) {
+		set_fail_state("Error exit code: 0x744");
+	}
 
 	register_clcmd("amx_time_menu", "Time_Settings")
 	RegisterHookChain(RG_CBasePlayer_Spawn, "@CBasePlayer_Spawn", .post=true);
@@ -44,7 +50,6 @@ public plugin_init() {
 	mp_forcerespawn = get_cvar_pointer("mp_forcerespawn");
 	mp_buytime = get_cvar_pointer("mp_buytime");
 	mp_give_player_c4 = get_cvar_pointer("mp_give_player_c4");
-	bh_enabled = get_cvar_pointer("bh_enabled");
 	mp_round_infinite = get_cvar_pointer("mp_round_infinite");
 
 	bind_pcvar_float(create_cvar("dm_start_time", "1", _, _, true, 1.0), dmstart);
