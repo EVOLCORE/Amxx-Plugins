@@ -1,0 +1,10 @@
+[en]
+MENU_TITLE = Dynamic date settings
+DATE = Date
+HOUR = Hour
+MINUTE = Minute
+DAY = Day
+MONTH = Month
+SAVE_SETTINGS = Save settings
+CHANGED_SETTINGS = Date settings were changed by admin ^4%n.
+MENU_EXIT = Reset settings and Exit
