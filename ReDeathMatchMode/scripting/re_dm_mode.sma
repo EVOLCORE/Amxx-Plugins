@@ -3,10 +3,10 @@
 #include <dynamic_time>
 #include <nvault>
 
-#define TAG "Element"
+#define TAG "HW"
 
 new bool:dmcontrol, timeset = false;
-new sv_restart, mp_forcerespawn, mp_buytime, mp_give_player_c4, mp_infinite_ammo, mp_round_infinite;
+new sv_restart, mp_forcerespawn, mp_buytime, mp_give_player_c4, mp_infinite_ammo, mp_round_infinite, mp_roundtime, mp_item_staytime;
 new New_Date_Minute , New_Date_Hour , New_Date_Day , New_Date_Month , New_Date_Year
 new Difference_Minute , Difference_Hour , Difference_Day , Difference_Month , Difference_Year
 new VaultFile, Float:dmstart, Float:dmend
@@ -51,6 +51,8 @@ public plugin_init() {
 	mp_buytime = get_cvar_pointer("mp_buytime");
 	mp_give_player_c4 = get_cvar_pointer("mp_give_player_c4");
 	mp_round_infinite = get_cvar_pointer("mp_round_infinite");
+	mp_roundtime = get_cvar_pointer("mp_roundtime");
+	mp_item_staytime = get_cvar_pointer("mp_item_staytime");
 
 	bind_pcvar_float(create_cvar("dm_start_time", "1", _, _, true, 1.0), dmstart);
 	bind_pcvar_float(create_cvar("dm_end_time", "10", _, _, true, 1.0), dmend);
@@ -71,11 +73,13 @@ public plugin_init() {
 		if(!timeset) {
 			set_pcvar_num(sv_restart, 3);
 			timeset = true;
-			set_pcvar_num(mp_forcerespawn, 2);
-			set_pcvar_num(mp_buytime, 0);
+			set_pcvar_num(mp_forcerespawn, 1);
+			set_pcvar_num(mp_buytime,0);
 			set_pcvar_num(mp_infinite_ammo, 2);
 			set_pcvar_num(mp_give_player_c4, 0);
 			set_pcvar_num(mp_round_infinite, 1);
+			set_pcvar_num(mp_roundtime, 1);
+			set_pcvar_num(mp_item_staytime, 0);
 			client_print_color(0, 0, "^4[%s]Hour ^1%d:%d starting ^3DEATHMATCH Mode ^1Activated", TAG, Hour, Minute)
 			client_print_color(0, 0, "^4[%s]Hour ^1%d:%d starting ^3DEATHMATCH Mode ^1Activated", TAG, Hour, Minute)
 			client_print_color(0, 0, "^4[%s]Hour ^1%d:%d starting ^3DEATHMATCH Mode ^1Activated", TAG, Hour, Minute)
@@ -91,6 +95,8 @@ public plugin_init() {
 			set_pcvar_num(mp_infinite_ammo, 0);
 			set_pcvar_num(mp_give_player_c4, 1);
 			set_pcvar_num(mp_round_infinite, 0);
+			set_pcvar_num(mp_roundtime, 1);
+			set_pcvar_num(mp_item_staytime, 0);
 			client_print_color(0, 0, "^4[%s]Hour ^1%d:%d starting ^3PUBLIC Mode ^1Activated", TAG, Hour, Minute)
 			client_print_color(0, 0, "^4[%s]Hour ^1%d:%d starting ^3PUBLIC Mode ^1Activated", TAG, Hour, Minute)
 			client_print_color(0, 0, "^4[%s]Hour ^1%d:%d starting ^3PUBLIC Mode ^1Activated", TAG, Hour, Minute)
