@@ -6,8 +6,8 @@
 new const SayTag[] = "HW";
 
 enum {
-    START_HOUR = 13,      // Hour night mode starts
-    END_HOUR = 14          // Hour night mode ends
+    START_HOUR = 01,      // Hour night mode starts
+    END_HOUR = 10          // Hour night mode ends
 }
 
 enum MenuNames {
@@ -43,7 +43,7 @@ new g_iPrimaryWeaponSave[MAX_CLIENTS + 1],
     bool:g_blDM;
 
 public plugin_init() {
-   register_plugin("[ReAPI] Mode Switch", "1.3", "mIDnight");
+   register_plugin("[Reapi] Mode Switch", "1.3", "mIDnight");
 
    new const szWeaponMenu[][] = {
       "say /guns",
@@ -195,18 +195,16 @@ public OnConfigsExecuted() {
          g_blDM = true;
          @RegisterMenus();
          @SetCvars(DM);
-		 set_pcvar_num(get_cvar_pointer("mp_buytime"), 0);
+         set_pcvar_num(get_cvar_pointer("mp_buytime"), 0);
          client_print_color(0, 0, "^4[%s] ^1DeathMatch mode activated. Hour: ^3%d:00", SayTag, START_HOUR);
       }
    }
    else if(g_blDM) {
       g_blDM = false;
       @SetCvars(PUB);
-	  set_pcvar_float(get_cvar_pointer("mp_buytime"), 0.25);
+      set_pcvar_float(get_cvar_pointer("mp_buytime"), 0.25);
       client_print_color(0, 0, "^4[%s] ^1Public mode activated. Hour: ^3%d:00", SayTag, END_HOUR);
    }
-
-   set_task(60.0, "OnConfigsExecuted", .flags = "b");
 }
 
 @SetCvars(const iNum) {
