@@ -187,24 +187,31 @@ public client_disconnected(pPlayer) {
 }
 
 public OnConfigsExecuted() {
-   new iHour;
-   time(iHour);
+	new iHour;
+	time(iHour);
 
-   if(START_HOUR <= iHour && iHour < END_HOUR) {
-      if(!g_blDM) {
-         g_blDM = true;
-         @RegisterMenus();
-         @SetCvars(DM);
-         set_pcvar_num(get_cvar_pointer("mp_buytime"), 0);
-         client_print_color(0, 0, "^4[%s] ^1DeathMatch mode activated. Hour: ^3%d:00", SayTag, START_HOUR);
-      }
-   }
-   else if(g_blDM) {
-      g_blDM = false;
-      @SetCvars(PUB);
-      set_pcvar_float(get_cvar_pointer("mp_buytime"), 0.25);
-      client_print_color(0, 0, "^4[%s] ^1Public mode activated. Hour: ^3%d:00", SayTag, END_HOUR);
-   }
+	if(START_HOUR <= iHour && iHour < END_HOUR) {
+		if(!g_blDM) {
+			g_blDM = true;
+			@RegisterMenus();
+			@SetCvars(DM);
+			new const g_szPluginsList[][] = {"plugins_controller.amxx","re_weapon_rest.amxx","cortex_auto_team_balancer.amxx","cortex_auto_team_balancer.amxx",
+			"re_steambonus.amxx","re_steambonus.amxx","re_admin_free_look.amxx","re_no_team_flash.amxx","re_slay_losers.amxx","round_info.amxx","ele_kill_assist.amxx",
+			"re_afk_slay.amxx","re_hud_score.amxx","re_vip.amxx","c4_timer.amxx"};
+
+			for(new iPlugin=0;iPlugin<=charsmax(g_szPluginsList);iPlugin++) {
+			pause("ac",g_szPluginsList[iPlugin]);
+}
+			set_pcvar_num(get_cvar_pointer("mp_buytime"), 0);
+			client_print_color(0, 0, "^4[%s] ^1DeathMatch mode activated. Hour: ^3%d:00", SayTag, START_HOUR);
+		}
+	}
+	else if(g_blDM) {
+		g_blDM = false;
+		@SetCvars(PUB);
+		set_pcvar_float(get_cvar_pointer("mp_buytime"), 0.25);
+		client_print_color(0, 0, "^4[%s] ^1Public mode activated. Hour: ^3%d:00", SayTag, END_HOUR);
+	}
 }
 
 @SetCvars(const iNum) {
