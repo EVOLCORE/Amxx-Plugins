@@ -22,6 +22,8 @@ enum {
 	PUB = 2
 }
 
+new const g_szMapPrefix[][] = { "awp_", "35hp" }; //Blocking plugin to work on maps
+
 new const g_szPluginsList[][] = {
 	"plugins_controller.amxx",
 	"re_weapon_rest.amxx",
@@ -37,7 +39,7 @@ new const g_szPluginsList[][] = {
 	"re_hud_score.amxx",
 	"re_vip.amxx",
 	"c4_timer.amxx"
-};
+}; // Pausing plugins when DM mode
 
 new const g_szPrimaryWeapons[][][] = {
     {"M4A1","weapon_m4a1"},
@@ -60,21 +62,28 @@ new g_iPrimaryWeaponSave[MAX_CLIENTS + 1],
     bool:g_blDM;
 
 public plugin_init() {
-   register_plugin("[Reapi] Mode Switch", "1.3", "mIDnight");
+	register_plugin("[Reapi] Mode Switch", "1.3", "mIDnight");
 
-   new const szWeaponMenu[][] = {
-      "say /guns",
-      "say /weapons"
-   };
+	new const szWeaponMenu[][] = {
+		"say /guns",
+		"say /weapons"
+	};
 
-   for(new i = 0; i < sizeof(szWeaponMenu); i++) {
-      register_clcmd(szWeaponMenu[i], "@clcmd_weaponmenu");
-   }
+	for(new i = 0; i < sizeof(szWeaponMenu); i++) {
+		register_clcmd(szWeaponMenu[i], "@clcmd_weaponmenu");
+	}
 
-   RegisterHookChain(RG_CBasePlayer_Spawn, "@CBasePlayer_Spawn_Post", .post = true);
-   RegisterHookChain(RG_CBasePlayer_ImpulseCommands, "@CBasePlayer_ImpulseCommands_Pre", .post = false);
-   RegisterHookChain(RG_CBasePlayer_AddPlayerItem, "@CBasePlayer_AddPlayerItem_Pre", .post = false);
-   RegisterHam(Ham_Weapon_SecondaryAttack, "weapon_m4a1", "@Ham_Weapon_SecondaryAttack_Post", .Post = true);
+	RegisterHookChain(RG_CBasePlayer_Spawn, "@CBasePlayer_Spawn_Post", .post = true);
+	RegisterHookChain(RG_CBasePlayer_ImpulseCommands, "@CBasePlayer_ImpulseCommands_Pre", .post = false);
+	RegisterHookChain(RG_CBasePlayer_AddPlayerItem, "@CBasePlayer_AddPlayerItem_Pre", .post = false);
+	RegisterHam(Ham_Weapon_SecondaryAttack, "weapon_m4a1", "@Ham_Weapon_SecondaryAttack_Post", .Post = true);
+
+	new iMap_Name[32];
+	get_mapname(iMap_Name, charsmax(iMap_Name))
+	for(new i; i < sizeof(g_szMapPrefix); i++) {
+		if(containi(iMap_Name, g_szMapPrefix[i]) != -1)
+		pause("ad");
+	}
 }
 
 public client_disconnected(pPlayer) {
