@@ -7,27 +7,24 @@
 
 #define VIP_ACCESS      ADMIN_LEVEL_H      // VIP access flag (default flag "t" ADMIN_LEVEL_H)
 #define PREFIX          "^4[Element]^1"    // Prefix before messages (^ 1 - yellow ^ 3 - command color ^ 4 - green)
-#define NIGHT_MODE			   // Night mode free vip
+#define NIGHT_MODE			               // Night mode free vip
 #define VIPROUND        3                  // From which round you can open the VIP menu
-//#define AWPRND      	4                  // From which round are AWP and machine gun available
 #define BONUS_HS        10.0               // The amount of added HP per kill in the head (set to 0.0 if you don't need to add, since you can't comment out)
 #define BONUS_NORMAL    0.0                // The number of added HP per kill (set to 0.0 if you do not need to add, since you cannot comment out)
 #define MAX_HP          100.0              // Max HP
-#define VIPAUTODEAGLE                      // Give Deagle at the beginning of each round (comment if not necessary)
 #define VIPAUTOGRENADE                     // Give grenades at the beginning of each round (comment if not necessary)
 #define ROUND_NADES     1                  // From which round to give grenades (if VIPAUTOGRENADE is uncommented, otherwise it makes no sense to change it will not work)
-#define ROUND_DEAGLE    1                  // From which round to give deagle (if VIPAUTODEAGLE is uncommented, otherwise it makes no sense to change it will not work)
 #define ROUND_ARMOR     2                  // From which round to give armor
 #define ROUND_DEFUSE    2                  // From which round to give defuse kit
 #define AUTOVIPMENU                        // Automatically open the VIP menu at the beginning of the round (disabled by default)
-//#define VIPTAB                           // Show VIP status in the table on the tab (comment if not necessary)
-#define ADMIN_LOADER                       // Deadline to end with Admin Loader (comment if not needed)
+#define VIPTAB                             // Show VIP status in the table on the tab (comment if not necessary)
+#define ADMIN_LOADER                       // Deadline to end with Admin Loader by mIDnight (comment if not needed)
 #define DAMAGER                            // damager ladder (comment if necessary)
-#define FIFTH_ITEM                         // 5th point in vipka switching the damager by pressing (uncomment if necessary + uncomment DAMAGER)
+#define DAMAGER_MENU                       // Damager switch off/on from VIP menu
 
 #if defined NIGHT_MODE
-#define START_HOUR 		22					// Hour night mode start
-#define END_HOUR 		10					// Hour night mode end
+#define START_HOUR 		22	   // Hour night mode start
+#define END_HOUR 		10	  // Hour night mode end
 
 new bool:IsNightMode;
 #endif
@@ -53,6 +50,7 @@ new g_iDamageCoordPos[MAX_PLAYERS + 1]
 #endif
 
 new g_iRoundCount;
+new iPistol[MAX_CLIENTS+1];
 new bool:g_bUseWeapon[33];
 new bool:g_bUserVip[33];
 new g_isSwitchDmg[33] = {0, ...};
@@ -66,8 +64,8 @@ public plugin_init() {
 	register_clcmd("say /vipmenu", "@clcmd_VipMenu"); register_clcmd("say_team /vipmenu", "@clcmd_VipMenu");
 	register_clcmd("say /wantvip", "@clcmd_WantVip"); register_clcmd("say_team /wantvip", "@clcmd_WantVip");
 	register_clcmd("say", "@hook_say"); register_clcmd("say_team", "@hook_say");
-#if defined FIFTH_ITEM
-	register_menucmd(register_menuid("@VipMenu"), MENU_KEY_0|MENU_KEY_1|MENU_KEY_2|MENU_KEY_3|MENU_KEY_5, "@VipMenuHandler");
+#if defined DAMAGER_MENU
+	register_menucmd(register_menuid("@VipMenu"), MENU_KEY_0|MENU_KEY_1|MENU_KEY_2|MENU_KEY_3|MENU_KEY_4, "@VipMenuHandler");
 #else
 	register_menucmd(register_menuid("@VipMenu"), MENU_KEY_0|MENU_KEY_1|MENU_KEY_2|MENU_KEY_3, "@VipMenuHandler");
 #endif
@@ -158,39 +156,38 @@ public client_putinserver(id) {
 #endif
 
 @CBasePlayer_Spawn_Post(id) {
-	if(!is_user_alive(id)) {
-		return 0;
-	}
-	if(isUserVip(id)) { 
-		g_bUserVip[id] = true;
-	} else { 
-		return g_bUserVip[id] = false;
-	}	
+    if(!is_user_alive(id)) {
+        return 0;
+    }
+    if(isUserVip(id)) { 
+        g_bUserVip[id] = true;
+    } else { 
+        return g_bUserVip[id] = false;
+    }	
 #if defined VIPAUTOGRENADE
-	if(g_iRoundCount >= ROUND_NADES) {
-		rg_give_item(id, "weapon_hegrenade", GT_APPEND);
-		rg_give_item(id, "weapon_flashbang", GT_APPEND);
-	}
+    if(g_iRoundCount >= ROUND_NADES) {
+        rg_give_item(id, "weapon_hegrenade", GT_APPEND);
+        rg_give_item(id, "weapon_flashbang", GT_APPEND);
+    }
 #endif
-#if defined VIPAUTODEAGLE
-	if(g_iRoundCount >= ROUND_DEAGLE) {
-		rg_give_item(id, "weapon_deagle", GT_REPLACE);
-		rg_set_user_bpammo(id, WEAPON_DEAGLE, 35);
-	}
-#endif
-	if(g_iRoundCount >= ROUND_ARMOR) {
-		rg_set_user_armor(id, 100, ARMOR_VESTHELM);
-	}
-	if(g_iRoundCount >= ROUND_DEFUSE) {
-		new TeamName:team = get_member(id, m_iTeam);
-		if(team == TEAM_CT) {
-			rg_give_defusekit(id, true);
-		}
-	}
+    switch(iPistol[id]) {
+        case 0: { rg_give_item(id, "weapon_deagle", GT_REPLACE); rg_set_user_bpammo(id, WEAPON_DEAGLE, 35); }
+        case 1: { rg_give_item(id, "weapon_usp", GT_REPLACE); rg_set_user_bpammo(id, WEAPON_USP, 100); }
+        case 2: { rg_give_item(id, "weapon_glock18", GT_REPLACE); rg_set_user_bpammo(id, WEAPON_GLOCK18, 120); }
+    }
+    if(g_iRoundCount >= ROUND_ARMOR) {
+        rg_set_user_armor(id, 100, ARMOR_VESTHELM);
+    }
+    if(g_iRoundCount >= ROUND_DEFUSE) {
+        new TeamName:team = get_member(id, m_iTeam);
+        if(team == TEAM_CT) {
+            rg_give_defusekit(id, true);
+        }
+    }
 #if defined AUTOVIPMENU
-	return @clcmd_VipMenu(id);
+    return @clcmd_VipMenu(id);
 #else
-	return 0;
+    return 0;
 #endif
 }
 
@@ -201,17 +198,12 @@ public client_putinserver(id) {
 	if(szMsg[0] != '/') {
 		return 0;
 	}
-	static const szChoosedWP[][] = { "/ak47", "/m4a1", "/awp" };
+	static const szChoosedWP[][] = { "/ak47", "/m4a1" };
 	for(new i; i < sizeof szChoosedWP; i++) {
 		if(!strcmp(szMsg, szChoosedWP[i])) {
 			if(!isAllowToUse(id)) { 
 				break;
 			}
-			#if defined AWPRND
-			if(i > 1 && g_iRoundCount < AWPRND) {
-				return client_print_color(id, 0, "%s AWP is available after ^3%d ^1round!", PREFIX, AWPRND);
-			}
-			#endif
 			return @VipMenuHandler(id, i);
 		}
 	}
@@ -242,18 +234,12 @@ public client_putinserver(id) {
 	}	
 #endif
 	iKey |= MENU_KEY_1|MENU_KEY_2;
-	iLen += formatex(szMenu[iLen], charsmax(szMenu) - iLen, "\r1. \wTake \yAK47^n\r2. \wTake \yM4A1^n");
-#if defined AWPRND
-	if(g_iRoundCount < AWPRND) {
-		iLen += formatex(szMenu[iLen], charsmax(szMenu) - iLen, "\r3. \dTake AWP \r[from %d round]^n^n", AWPRND);
-	} else {
-		iKey |= MENU_KEY_3;
-		iLen += formatex(szMenu[iLen], charsmax(szMenu) - iLen, "\r3. \wTake \yAWP^n^n");
-	}
-#endif	
-#if defined FIFTH_ITEM
-	iKey |= MENU_KEY_5;
-	iLen += formatex(szMenu[iLen], charsmax(szMenu) - iLen, "\r5. \wDamager \r[\y%s\r]^n^n", g_isSwitchDmg[id] ? "Enabled" : "Disabled");
+	iLen += formatex(szMenu[iLen], charsmax(szMenu) - iLen, "\r1. \wTake \yAK47^n\r2. \wTake \yM4A1^n^n");
+	iKey |= MENU_KEY_3;
+	iLen += formatex(szMenu[iLen], charsmax(szMenu) - iLen, "\r3. \wPistol on spawn \r[\y%s\r]^n", iPistol[id] == 0 ? "Deagle" : iPistol[id] == 1 ? "USP" : "Glock");
+#if defined DAMAGER_MENU
+	iKey |= MENU_KEY_4;
+	iLen += formatex(szMenu[iLen], charsmax(szMenu) - iLen, "\r4. \wDamager \r[\y%s\r]^n^n", g_isSwitchDmg[id] ? "Enabled" : "Disabled");
 #endif
 	formatex(szMenu[iLen], charsmax(szMenu) - iLen, "\r0. \wExit");
 	show_menu(id, iKey, szMenu, -1, "@VipMenu");
@@ -261,7 +247,7 @@ public client_putinserver(id) {
 }
 
 @VipMenuHandler(id, iKey) {
-#if defined FIFTH_ITEM
+#if defined DAMAGER_MENU
 	if(iKey > 4 || g_bUseWeapon[id]) {
 		return 0;
 	}
@@ -271,14 +257,17 @@ public client_putinserver(id) {
 	}
 #endif
 	switch(iKey) {
-		case 0..3: {
-			static const szChoosedBP[] = { 90, 90, 30 };
-			static const szChoosedWP[][] = { "weapon_ak47", "weapon_m4a1", "weapon_awp" };
+		case 0..1: {
+			static const szChoosedBP[] = { 90, 90 };
+			static const szChoosedWP[][] = { "weapon_ak47", "weapon_m4a1" };
 			g_bUseWeapon[id] = true;
 			return give_item_ex(id, szChoosedWP[iKey], szChoosedBP[iKey]);
 		}
-#if defined FIFTH_ITEM
-		case 4: {
+        case 2: {
+			@GivePistol(id);
+		}
+#if defined DAMAGER_MENU
+		case 3: {
 			g_isSwitchDmg[id] = (g_isSwitchDmg[id]) ? 0 : 1;
 			num_to_str(g_isSwitchDmg[id], g_szText, charsmax(g_szText));
 			client_cmd(id, "setinfo _damager %s", g_szText);
@@ -293,6 +282,12 @@ stock give_item_ex(id, currWeaponName[], ammoAmount) {
 	rg_give_item(id, currWeaponName, GT_REPLACE);
 	rg_set_user_bpammo(id, rg_get_weapon_info(currWeaponName, WI_ID), ammoAmount);
 	engclient_cmd(id, currWeaponName);
+	return PLUGIN_HANDLED;
+}
+
+@GivePistol(id) {
+	iPistol[id] >= 2 ? (iPistol[id] = 0) : iPistol[id]++;
+	@clcmd_VipMenu(id);
 	return PLUGIN_HANDLED;
 }
 
