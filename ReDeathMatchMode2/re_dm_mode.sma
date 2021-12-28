@@ -6,8 +6,8 @@
 new const SayTag[] = "HW";
 
 enum {
-    START_HOUR = 01,      // Hour night mode starts
-    END_HOUR = 10          // Hour night mode ends
+    START_HOUR = 22,      // Hour night mode starts
+    END_HOUR = 11          // Hour night mode ends
 }
 
 enum MenuNames {
@@ -22,23 +22,25 @@ enum {
 	PUB = 2
 }
 
-new const g_szMapPrefix[][] = { "awp_", "35hp" }; //Blocking plugin to work on maps
-
 new const g_szPluginsList[][] = {
+   "chatmanager.amxx",
 	"plugins_controller.amxx",
 	"re_weapon_rest.amxx",
-	"cortex_auto_team_balancer.amxx",
+	"re_team_balancer.amxx",
 	"re_steambonus.amxx",
 	"re_best_player_of_round.amxx",
 	"re_admin_free_look.amxx",
 	"re_no_team_flash.amxx",
 	"re_slay_losers.amxx",
 	"round_info.amxx",
+   "csstatsx_sql.amxx",
+   "aes_statsx_cstrike.amxx",
 	"ele_kill_assist.amxx",
 	"re_afk_slay.amxx",
-	"re_hud_score.amxx",
 	"re_vip.amxx",
-	"c4_timer.amxx"
+	"c4_timer.amxx",
+   "nades_limit.amxx",
+   "re_parachute.amxx"
 }; // Pausing plugins when DM mode
 
 new const g_szPrimaryWeapons[][][] = {
@@ -62,7 +64,9 @@ new g_iPrimaryWeaponSave[MAX_CLIENTS + 1],
     bool:g_blDM;
 
 public plugin_init() {
-	register_plugin("[Reapi] Mode Switch", "1.3", "mIDnight");
+	register_plugin("[ReAPI] Mode Switch", "0.0.2", "mIDnight");
+
+	PluginStartStop();
 
 	new const szWeaponMenu[][] = {
 		"say /guns",
@@ -77,12 +81,21 @@ public plugin_init() {
 	RegisterHookChain(RG_CBasePlayer_ImpulseCommands, "@CBasePlayer_ImpulseCommands_Pre", .post = false);
 	RegisterHookChain(RG_CBasePlayer_AddPlayerItem, "@CBasePlayer_AddPlayerItem_Pre", .post = false);
 	RegisterHam(Ham_Weapon_SecondaryAttack, "weapon_m4a1", "@Ham_Weapon_SecondaryAttack_Post", .Post = true);
+}
 
-	new iMap_Name[32];
-	get_mapname(iMap_Name, charsmax(iMap_Name))
-	for(new i; i < sizeof(g_szMapPrefix); i++) {
-		if(containi(iMap_Name, g_szMapPrefix[i]) != -1)
-		pause("ad");
+PluginStartStop() {
+	new const szMapPrefix[][] = {
+		"awp_",
+		"35hp"
+	};
+
+	new szCurrentMapName[32];
+	get_mapname(szCurrentMapName, charsmax(szCurrentMapName));
+
+	for(new i = 0; i < sizeof(szMapPrefix); i++) {
+		if(containi(szCurrentMapName, szMapPrefix[i]) != -1) {
+			pause("ad");
+		}
 	}
 }
 
@@ -102,7 +115,7 @@ public client_disconnected(pPlayer) {
    if(!g_blDM || get_member(pPlayer, m_bJustConnected)) {
       return;
    }
-
+   
    set_member(pPlayer, m_iHideHUD, get_member(pPlayer, m_iHideHUD) | (HIDEHUD_TIMER | HIDEHUD_MONEY));
    rg_remove_all_items(pPlayer);
    rg_give_item(pPlayer, "weapon_knife");
@@ -170,7 +183,7 @@ public client_disconnected(pPlayer) {
 }
 
 @WeaponMenu_Handler(const pPlayer, const iMenu, const iItem) {
-   if(!is_user_alive(pPlayer)) {
+   if(!is_user_alive(pPlayer) || iItem == MENU_EXIT) {
       return;
    }
    switch(iItem) {
@@ -189,7 +202,7 @@ public client_disconnected(pPlayer) {
 }
 
 @PrimaryMenu_Handler(const pPlayer, const iMenu, const iItem) {
-   if(!is_user_alive(pPlayer)) {
+   if(!is_user_alive(pPlayer) || iItem == MENU_EXIT) {
       return;
    }
 
@@ -199,7 +212,7 @@ public client_disconnected(pPlayer) {
 }
 
 @SecondaryMenu_Handler(const pPlayer, const iMenu, const iItem) {
-   if(!is_user_alive(pPlayer)) {
+   if(!is_user_alive(pPlayer) || iItem == MENU_EXIT) {
       return;
    }
 
@@ -222,9 +235,11 @@ public OnConfigsExecuted() {
 			@RegisterMenus();
 			@SetCvars(DM);
 
-			for(new iPlugin=0;iPlugin<=charsmax(g_szPluginsList);iPlugin++) {
-			pause("ac",g_szPluginsList[iPlugin]);
-}
+			for(new i = 0; i < sizeof(g_szPluginsList); i++) {
+				pause("ac", g_szPluginsList[i]);
+			}
+
+			unpause("ac", "re_dm_spawns.amxx");
 			set_pcvar_num(get_cvar_pointer("mp_buytime"), 0);
 			client_print_color(0, 0, "^4[%s] ^1DeathMatch mode activated. Hour: ^3%d:00", SayTag, START_HOUR);
 		}
