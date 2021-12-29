@@ -1,341 +1,343 @@
+#pragma semicolon 1
+
 #include <amxmodx>
 #include <reapi>
 
-#if AMXX_VERSION_NUM < 183
-	#include <colorchat>
+native admin_expired(index);
+
+/* YOU CAN UNDEFINE WHATEVER YOU WANT */
+#define VIP_ACCESS ADMIN_LEVEL_H    // VIP ACCESS    
+#define DAMAGER                     // DAMAGE THINGS
+#define VIP_MODEL                   // IP MODELS
+#define STEAM_VIP		            // STEAM WILL BE VIP EVERYTIME IF DEFINE IS ON
+#define BONUS_HS        10.0        // The amount of added HP per kill in the head (set to 0.0 if you don't need to add, since you can't comment out)
+#define BONUS_NORMAL    0.0         // The number of added HP per kill (set to 0.0 if you do not need to add, since you cannot comment out)
+#define MAX_HP          100.0       // Max HP
+#define BLOCK_MAPS	"awp_", "aim_", "fy_", "35hp", "$"
+
+new const g_szTag[] = "HW";         // Chat tag(prefix)
+
+/* Vip Models */
+#if defined VIP_MODEL
+new const g_szModelNames[][] = {
+	"winter_vip_t",   // te model
+	"winter_vip_ct"    // ct model
+};
 #endif
 
-#define VIP_ACCESS      ADMIN_LEVEL_H      // VIP access flag (default flag "t" ADMIN_LEVEL_H)
-#define PREFIX          "^4[Element]^1"    // Prefix before messages (^ 1 - yellow ^ 3 - command color ^ 4 - green)
-#define NIGHT_MODE			               // Night mode free vip
-#define VIPROUND        3                  // From which round you can open the VIP menu
-#define BONUS_HS        10.0               // The amount of added HP per kill in the head (set to 0.0 if you don't need to add, since you can't comment out)
-#define BONUS_NORMAL    0.0                // The number of added HP per kill (set to 0.0 if you do not need to add, since you cannot comment out)
-#define MAX_HP          100.0              // Max HP
-#define VIPAUTOGRENADE                     // Give grenades at the beginning of each round (comment if not necessary)
-#define ROUND_NADES     1                  // From which round to give grenades (if VIPAUTOGRENADE is uncommented, otherwise it makes no sense to change it will not work)
-#define ROUND_ARMOR     2                  // From which round to give armor
-#define ROUND_DEFUSE    2                  // From which round to give defuse kit
-#define AUTOVIPMENU                        // Automatically open the VIP menu at the beginning of the round (disabled by default)
-#define VIPTAB                             // Show VIP status in the table on the tab (comment if not necessary)
-#define ADMIN_LOADER                       // Deadline to end with Admin Loader by mIDnight (comment if not needed)
-#define DAMAGER                            // damager ladder (comment if necessary)
-#define DAMAGER_MENU                       // Damager switch off/on from VIP menu
+/* Settings */
+enum {
+    VIPROUND = 3,               // From which round you can open the VIP menu
+    ROUND_NADES = 1,            // From which round to give grenades
+    ROUND_ARMOR = 2,            // From which round to give armor
+    ROUND_DEFUSE = 2,           // From which round to give defuse kit
+    START_HOUR = 22,	        // Hour night mode start
+    END_HOUR = 10		        // Hour night mode end
+}
 
-#if defined NIGHT_MODE
-#define START_HOUR 		22	   // Hour night mode start
-#define END_HOUR 		10	  // Hour night mode end
+new g_iHudSyncObj, g_iSwitchDmg[MAX_CLIENTS + 1], bool:g_blNightMode,
+g_iPistol[MAX_CLIENTS + 1], bool:g_blWeapon[MAX_CLIENTS + 1], g_iRound, mp_buytime,
+g_blBuyzone;
 
-new bool:IsNightMode;
-#endif
-
-#define IsPlayer(%1)  (1 <= %1 <= g_iMaxPlayers)
-
-#if defined ADMIN_LOADER
-	native admin_expired(index);
-#endif
-
-#if defined DAMAGER
-#define HUD_ATTACKER_COLOR 0, 144, 200
-#define HUD_VICTIM_COLOR 200, 0, 0
-const Float: HUD_HOLD_TIME	=	1.0
-const RESET_VALUE =	0
-
-new const Float: DAMAGE_COORDS[][] = { {0.50, 0.43}, {0.55, 0.45}, {0.57, 0.50}, {0.55, 0.55}, {0.50, 0.57}, {0.45, 0.55}, {0.43, 0.50}, {0.45, 0.45} }
-
-new g_hHudSyncObj
-new const POS_X	=	0
-new const POS_Y	=	1
-new g_iDamageCoordPos[MAX_PLAYERS + 1]
-#endif
-
-new g_iRoundCount;
-new iPistol[MAX_CLIENTS+1];
-new bool:g_bUseWeapon[33];
-new bool:g_bUserVip[33];
-new g_isSwitchDmg[33] = {0, ...};
-new g_szText[3] = "";
+new HookChain:g_iHC_Spawn_Post;
 
 public plugin_init() {
-	register_plugin("[ReAPI] Vip System", "1.2", "mIDnight");
-#if defined DAMAGER
-	register_clcmd("say /damager", "@clcmd_SwitchDmg"); register_clcmd("say_team /damager", "@clcmd_SwitchDmg");
-#endif
-	register_clcmd("say /vipmenu", "@clcmd_VipMenu"); register_clcmd("say_team /vipmenu", "@clcmd_VipMenu");
-	register_clcmd("say /wantvip", "@clcmd_WantVip"); register_clcmd("say_team /wantvip", "@clcmd_WantVip");
-	register_clcmd("say", "@hook_say"); register_clcmd("say_team", "@hook_say");
-#if defined DAMAGER_MENU
-	register_menucmd(register_menuid("@VipMenu"), MENU_KEY_0|MENU_KEY_1|MENU_KEY_2|MENU_KEY_3|MENU_KEY_4, "@VipMenuHandler");
-#else
-	register_menucmd(register_menuid("@VipMenu"), MENU_KEY_0|MENU_KEY_1|MENU_KEY_2|MENU_KEY_3, "@VipMenuHandler");
-#endif
-	RegisterHookChain(RG_CSGameRules_RestartRound, "@CSGameRules_RestartRound_Pre", .post = false);
-	RegisterHookChain(RG_CBasePlayer_Spawn, "@CBasePlayer_Spawn_Post", .post = true);
-	RegisterHookChain(RG_CBasePlayer_Killed, "@CBasePlayer_Killed_Post", .post = true);
-#if defined DAMAGER
-	RegisterHookChain(RG_CBasePlayer_TakeDamage, "@CBasePlayer_TakeDamage_Post", .post = true);
-	g_hHudSyncObj = CreateHudSyncObj()
-#endif
-	new iMap_Name[32], iMap_Prefix[][] = { "awp_", "fy_", "35hp", "$" }
-	get_mapname(iMap_Name, charsmax(iMap_Name))
-	for(new i; i < sizeof(iMap_Prefix); i++) {
-		if(containi(iMap_Name, iMap_Prefix[i]) != -1)
-		pause("ad")
-	}
-#if defined VIPTAB
-	if(!get_member_game(m_bMapHasVIPSafetyZone)) {
-		register_message(get_user_msgid("ScoreAttrib"), "@msgScoreAttrib");
-	}
-#endif
+    register_plugin("[ReAPI] VIP system", "0.0.1", "mIDnight");
+
+    #if defined DAMAGER
+        register_clcmd("say /damager", "@clcmd_damager");
+        register_clcmd("say_team /damager", "@clcmd_damager");
+    #endif
+
+    register_clcmd("say /vipmenu", "@clcmd_vipmenu");
+    register_clcmd("say_team /vipmenu", "@clcmd_vipmenu");
+
+    register_clcmd("say /wantvip", "@clcmd_wantvip");
+    register_clcmd("say_team /wantvip", "@clcmd_wantvip");
+
+    RegisterHookChain(RG_CSGameRules_RestartRound, "@CSGameRules_RestartRound_Pre", .post = false);
+    RegisterHookChain(RG_CSGameRules_RestartRound, "@CSGameRules_RestartRound_Post", .post = true);
+    g_iHC_Spawn_Post = RegisterHookChain(RG_CBasePlayer_Spawn, "@CBasePlayer_Spawn_Post", .post = true);
+    EnableHookChain(g_iHC_Spawn_Post);
+    RegisterHookChain(RG_CBasePlayer_Killed, "@CBasePlayer_Killed_Post", .post = true);
+
+    #if defined DAMAGER
+        RegisterHookChain(RG_CBasePlayer_TakeDamage, "@CBasePlayer_TakeDamage_Post", .post = true);
+        g_iHudSyncObj = CreateHudSyncObj();
+    #endif
+
+    #if defined VIP_MODEL
+        RegisterHookChain(RG_CBasePlayer_SetClientUserInfoModel, "@CBasePlayer_SetClientUserInfoModel_Pre", .post = false);
+    #endif
+
+    if(!get_member_game(m_bMapHasVIPSafetyZone)) {
+        register_message(get_user_msgid("ScoreAttrib"), "@message_ScoreAttrib");
+    }
+
+    mp_buytime = get_cvar_pointer("mp_buytime");
 }
 
-#if defined VIPTAB
-	@msgScoreAttrib() {
-	if(isUserVip(get_msg_arg_int(1)) && !get_msg_arg_int(2)) {
-		set_msg_arg_int(2, ARG_BYTE, (1<<2));
+#if defined VIP_MODEL
+public plugin_precache() {
+	for(new i = 0; i < sizeof(g_szModelNames); i++) {
+		precache_model(fmt("models/player/%s/%s.mdl", g_szModelNames[i], g_szModelNames[i]));
 	}
 }
 #endif
+
+public plugin_cfg() {
+	new map[32]; rh_get_mapname(map, charsmax(map));
+	new BlockMap[][] = { BLOCK_MAPS };
+	for(new i; i < sizeof BlockMap; i++)
+	if(containi(map, BlockMap[i]) != -1) {
+		DisableHookChain(g_iHC_Spawn_Post);
+	}
+}
+
+#if defined DAMAGER
+public client_putinserver(pPlayer) {
+    g_iSwitchDmg[pPlayer] = true;
+}
+#endif
+
+public OnConfigsExecuted() {
+    new __hour;
+    time(__hour);
+    g_blNightMode = bool:(__hour > START_HOUR || __hour < END_HOUR);
+}
+
+@clcmd_vipmenu(const pPlayer) {
+    if(!rvs_is_user_vip(pPlayer)) {
+        return PLUGIN_HANDLED;
+    }
+
+    new iExp = admin_expired(pPlayer);
+    new iMenu;
+
+    if(iExp > 0) {
+        iExp -= get_systime();
+ 
+        if(iExp > 0) {
+            iMenu = menu_create(fmt("\y|\rHyperWorld\y| VIP Menu: \r[\y%d day.\r]", iExp / 86400), "@clcmd_vipmenu_handler");
+        }
+        else {
+            iMenu = menu_create(fmt("\y|\rHyperWorld\y| VIP Menu: \r[\y%dh. %dmin.\r]", iExp / 3600, ((iExp / 60) - (iExp / 3600) * 60)), "@clcmd_vipmenu_handler");
+        }
+    }
+    else if(iExp == 0) {
+        iMenu = menu_create("\y\y|\rHyperWorld\y| VIP Menu: \r[\ylifetime\r]", "@clcmd_vipmenu_handler");
+    }
+    else {
+#if defined STEAM_VIP
+        iMenu = menu_create(fmt("\y\y|\rHyperWorld\y| FREE VIP Menu: %s", is_user_steam(pPlayer) ? "\w(\rSteam\w)" : "\w(\r22\w-\r10\w)"), "@clcmd_vipmenu_handler");
+#else
+        iMenu = menu_create("\y\y|\rHyperWorld\y| FREE VIP Menu: \w(\r22\w-\r10\w)", "@clcmd_vipmenu_handler");
+#endif
+    }
+
+    menu_additem(iMenu, "\yTake \wAK47");
+    menu_additem(iMenu, "\yTake \wM4A1^n");
+
+    menu_additem(iMenu, fmt("\yPistol on spawn \r[\y%s\r]", g_iPistol[pPlayer] == 0 ? "Deagle" : g_iPistol[pPlayer] == 1 ? "USP" : "Glock"));
+
+    #if defined DAMAGER
+    menu_additem(iMenu, fmt("\yDamager \r[\y%s\r]", g_iSwitchDmg[pPlayer] ? "Enabled" : "Disabled"));
+    #endif
+
+    menu_display(pPlayer, iMenu);
+    return PLUGIN_HANDLED;
+}
+
+@clcmd_vipmenu_handler(const pPlayer, const iMenu, const iItem) {
+    if(!rvs_is_user_vip(pPlayer)) {
+        menu_destroy(iMenu);
+        return PLUGIN_HANDLED;
+    }
+
+    switch(iItem) {
+        case 0: {
+            rg_give_item(pPlayer, "weapon_ak47", GT_REPLACE);
+            rg_set_user_bpammo(pPlayer, WEAPON_AK47, 90);
+            g_blWeapon[pPlayer] = true;
+        }
+        case 1: {
+            rg_give_item(pPlayer, "weapon_m4a1", GT_REPLACE);
+            rg_set_user_bpammo(pPlayer, WEAPON_M4A1, 90);
+            g_blWeapon[pPlayer] = true;
+        }
+        case 2: {
+            g_iPistol[pPlayer] >= 2 ? (g_iPistol[pPlayer] = 0) : g_iPistol[pPlayer]++;
+            @clcmd_vipmenu(pPlayer);
+        }
+
+        #if defined DAMAGER
+        case 3: {
+            g_iSwitchDmg[pPlayer] = !g_iSwitchDmg[pPlayer];
+            @clcmd_vipmenu(pPlayer);
+        }
+        #endif
+    }
+    menu_destroy(iMenu);
+    return PLUGIN_HANDLED;
+}
+
+#if defined DAMAGER
+@clcmd_damager(const pPlayer) {
+    if(!rvs_is_user_vip(pPlayer)) {
+        return PLUGIN_HANDLED;
+    }
+
+    g_iSwitchDmg[pPlayer] = !g_iSwitchDmg[pPlayer];
+    client_print_color(pPlayer, pPlayer, "^4[%s] ^1You ^4%s ^1damager for yourself", g_szTag, g_iSwitchDmg ? "Enabled" : "Disabled");
+    return PLUGIN_HANDLED;
+}
+#endif
+
+@clcmd_wantvip(const pPlayer) {
+    show_motd(pPlayer, "/addons/amxmodx/configs/want_vip.html");
+    return PLUGIN_HANDLED;
+}
 
 @CSGameRules_RestartRound_Pre() {
 	if(get_member_game(m_bCompleteReset)) {
-		g_iRoundCount = 0;
+		g_iRound = 0;
 	}
-	g_iRoundCount++;
-	arrayset(g_bUseWeapon, false, sizeof g_bUseWeapon);
+	g_iRound++;
+	g_blBuyzone = false;
+	arrayset(g_blWeapon, false, sizeof g_blWeapon);
 }
 
-#if defined NIGHT_MODE
-public OnConfigsExecuted() {
-	new __hour; time(__hour);	IsNightMode = bool:(__hour > START_HOUR || __hour < END_HOUR);
-}
-#endif
+@CSGameRules_RestartRound_Post() {
+    if(g_iRound < VIPROUND) {
+        return;
+    }
 
-public client_putinserver(id) {
-#if defined DAMAGER
-	if(id > 0 || id < 33) {
-		new sUserInfo[16]; get_user_info(id, "_damager", sUserInfo, charsmax(sUserInfo));
-		if(sUserInfo[0] && equal(sUserInfo, "off")) g_isSwitchDmg[id] = false;
-		else g_isSwitchDmg[id] = true;
-	}
-	#endif
+    remove_task(1337);
+    set_task(get_pcvar_float(mp_buytime) * 60.0, "@OffBuyzone", 1337);
 }
 
-@CBasePlayer_Killed_Post(const iVictim, iAttacker) {
-	if(!isUserVip(iAttacker) || iVictim == iAttacker) {
+@OffBuyzone() {
+    g_blBuyzone = true;
+    show_menu(0, 0, "");
+}
+
+@CBasePlayer_Spawn_Post(const pPlayer) {
+    if(get_member(pPlayer, m_bJustConnected)) {
+        return;
+    }
+
+    if(g_iRound >= ROUND_NADES) {
+        rg_give_item(pPlayer, "weapon_hegrenade", GT_APPEND);
+        rg_give_item(pPlayer, "weapon_flashbang", GT_APPEND);
+    }
+    if(g_iRound >= ROUND_ARMOR) {
+        rg_set_user_armor(pPlayer, 100, ARMOR_VESTHELM);
+    }
+    if(g_iRound >= ROUND_DEFUSE && get_member(pPlayer, m_iTeam) == TEAM_CT) {
+        rg_give_defusekit(pPlayer, true);
+    }
+
+    switch(g_iPistol[pPlayer]) {
+        case 0: { rg_give_item(pPlayer, "weapon_deagle", GT_REPLACE); rg_set_user_bpammo(pPlayer, WEAPON_DEAGLE, 35); }
+        case 1: { rg_give_item(pPlayer, "weapon_usp", GT_REPLACE); rg_set_user_bpammo(pPlayer, WEAPON_USP, 100); }
+        case 2: { rg_give_item(pPlayer, "weapon_glock18", GT_REPLACE); rg_set_user_bpammo(pPlayer, WEAPON_GLOCK18, 120); }
+    }
+
+    if(g_iRound >= VIPROUND && rvs_is_user_vip_no_text(pPlayer)) {
+        @clcmd_vipmenu(pPlayer);
+    }
+}
+
+@CBasePlayer_Killed_Post(const pVictim, pAttacker) {
+	if(!is_user_alive(pAttacker) || !rvs_is_user_vip_no_text(pAttacker) || pVictim == pAttacker) {
 		return;
 	}
-	
-	new Float:oldHP = get_entvar(iAttacker, var_health);
-	new Float:newHP = floatclamp(oldHP + (get_member(iVictim, m_bHeadshotKilled) ? BONUS_HS : BONUS_NORMAL), 0.0, MAX_HP);
-	set_entvar(iAttacker, var_health, newHP);
+
+	new Float:oldHP = get_entvar(pAttacker, var_health);
+	new Float:newHP = floatclamp(oldHP + (get_member(pVictim, m_bHeadshotKilled) ? BONUS_HS : BONUS_NORMAL), 0.0, MAX_HP);
+	set_entvar(pAttacker, var_health, newHP);
 }
 
 #if defined DAMAGER
-@CBasePlayer_TakeDamage_Post(const iVictim, iInflictor, iAttacker, Float:fDamage, bitDamageType) {
-	if(!(g_isSwitchDmg[iAttacker] == g_isSwitchDmg[iVictim]) || fDamage < 1.0) return;
-	if(rg_is_player_can_takedamage(iAttacker, iVictim)) {
+@CBasePlayer_TakeDamage_Post(const pVictim, iInflictor, pAttacker, Float:flDamage, bitDamageType) {
+    if(!is_user_connected(pAttacker) || !g_iSwitchDmg[pAttacker]) {
+        return;
+    }
+    if(pAttacker == pVictim || !rg_is_player_can_takedamage(pVictim, pAttacker)) {
+        return;
+    }
 
-		new iPos = ++g_iDamageCoordPos[iAttacker]
-	
-		if(iPos == sizeof(DAMAGE_COORDS)) {
-			iPos = g_iDamageCoordPos[iAttacker] = RESET_VALUE
-		}
+    static iDamageCoordPos[MAX_CLIENTS + 1];
+    static const Float: iDamageCoords[][] = { {0.50, 0.43}, {0.55, 0.45}, {0.57, 0.50}, {0.55, 0.55}, {0.50, 0.57}, {0.45, 0.55}, {0.43, 0.50}, {0.45, 0.45} };
 
-		if(isUserVip(iAttacker)) {
-			set_hudmessage(HUD_ATTACKER_COLOR, DAMAGE_COORDS[iPos][POS_X], DAMAGE_COORDS[iPos][POS_Y], _, _, HUD_HOLD_TIME)
-			ShowSyncHudMsg(iAttacker, g_hHudSyncObj, "%.0f", fDamage)
-		}
+    if(rvs_is_user_vip_no_text(pAttacker)) {
+        set_hudmessage(0, 144, 200, iDamageCoords[iDamageCoordPos[pAttacker]][0], iDamageCoords[iDamageCoordPos[pAttacker]][1], _, _, 1.0);
+        ShowSyncHudMsg(pAttacker, g_iHudSyncObj, "%.0f", flDamage);
+    }
 
-		if(isUserVip(iVictim)) {
-			set_hudmessage(HUD_VICTIM_COLOR, DAMAGE_COORDS[iPos][POS_X], DAMAGE_COORDS[iPos][POS_Y], _, _, HUD_HOLD_TIME)
-			ShowSyncHudMsg(iVictim, g_hHudSyncObj, "%.0f", fDamage)
-		}	
-	}	
+    iDamageCoordPos[pAttacker]++;
+
+    if(iDamageCoordPos[pAttacker] == sizeof(iDamageCoords)) {
+        iDamageCoordPos[pAttacker] = 0;
+    }
 }
 #endif
 
-@CBasePlayer_Spawn_Post(id) {
-    if(!is_user_alive(id)) {
-        return 0;
-    }
-    if(isUserVip(id)) { 
-        g_bUserVip[id] = true;
-    } else { 
-        return g_bUserVip[id] = false;
-    }	
-#if defined VIPAUTOGRENADE
-    if(g_iRoundCount >= ROUND_NADES) {
-        rg_give_item(id, "weapon_hegrenade", GT_APPEND);
-        rg_give_item(id, "weapon_flashbang", GT_APPEND);
-    }
+#if defined VIP_MODEL
+@CBasePlayer_SetClientUserInfoModel_Pre(const pPlayer, infobuffer[], szNewModel[]) {
+	if(rvs_is_user_vip_no_text(pPlayer)) {
+		SetHookChainArg(3, ATYPE_STRING, g_szModelNames[get_member(pPlayer, m_iTeam) == TEAM_TERRORIST ? 0 : 1]);
+	}
+}
 #endif
-    switch(iPistol[id]) {
-        case 0: { rg_give_item(id, "weapon_deagle", GT_REPLACE); rg_set_user_bpammo(id, WEAPON_DEAGLE, 35); }
-        case 1: { rg_give_item(id, "weapon_usp", GT_REPLACE); rg_set_user_bpammo(id, WEAPON_USP, 100); }
-        case 2: { rg_give_item(id, "weapon_glock18", GT_REPLACE); rg_set_user_bpammo(id, WEAPON_GLOCK18, 120); }
+
+@message_ScoreAttrib() {
+    new pPlayer = get_msg_arg_int(1);
+
+    if(is_user_alive(pPlayer) && rvs_is_user_vip_no_text(pPlayer)) {
+        set_msg_arg_int(2, ARG_BYTE, (1<<2));
     }
-    if(g_iRoundCount >= ROUND_ARMOR) {
-        rg_set_user_armor(id, 100, ARMOR_VESTHELM);
+}
+
+bool:rvs_is_user_vip(const pPlayer) {
+#if defined STEAM_VIP
+    if(~get_user_flags(pPlayer) & ADMIN_LEVEL_H && !g_blNightMode && !is_user_steam(pPlayer)) {
+        client_print_color(pPlayer, pPlayer, "^4[%s] ^1You are not authorized to use this menu.", g_szTag);
+        return false;
     }
-    if(g_iRoundCount >= ROUND_DEFUSE) {
-        new TeamName:team = get_member(id, m_iTeam);
-        if(team == TEAM_CT) {
-            rg_give_defusekit(id, true);
-        }
-    }
-#if defined AUTOVIPMENU
-    return @clcmd_VipMenu(id);
 #else
-    return 0;
+    if(~get_user_flags(pPlayer) & ADMIN_LEVEL_H && !g_blNightMode) {  //Vip Access
+        client_print_color(pPlayer, pPlayer, "^4[%s] ^1You are not authorized to use this menu.", g_szTag);
+        return false;
+    }
 #endif
+
+    if(!is_user_alive(pPlayer)) {
+        client_print_color(pPlayer, pPlayer, "^4[%s] ^1You must be alive to use this menu.", g_szTag);
+        return false;
+    }
+    if(!g_iRound) {
+        client_print_color(pPlayer, pPlayer, "^4[%s] ^1Warm-up round. It is forbidden to use this menu.", g_szTag);
+        return false;
+    }
+    if(g_blWeapon[pPlayer]) {
+        client_print_color(pPlayer, pPlayer, "^4[%s] ^1You have already picked up a weapon in this round.", g_szTag);
+        return false;
+    }
+    if(g_iRound < VIPROUND) {
+        client_print_color(pPlayer, pPlayer, "^4[%s] ^1VIP Weapons are avaiable after ^4%i ^1rounds.", g_szTag, VIPROUND);
+        return false;
+    }
+    if(g_blBuyzone) {
+        client_print_color(pPlayer, pPlayer, "^4[%s] ^1You cannot use this menu after buyzone expired", g_szTag);
+    }
+    return true;
 }
 
-@hook_say(id) {
-	static szMsg[128];
-	read_args(szMsg, 127);
-	remove_quotes(szMsg);
-	if(szMsg[0] != '/') {
-		return 0;
-	}
-	static const szChoosedWP[][] = { "/ak47", "/m4a1" };
-	for(new i; i < sizeof szChoosedWP; i++) {
-		if(!strcmp(szMsg, szChoosedWP[i])) {
-			if(!isAllowToUse(id)) { 
-				break;
-			}
-			return @VipMenuHandler(id, i);
-		}
-	}
-	return 0;
-}
-
-@clcmd_VipMenu(id) {
-	if(!isAllowToUse(id)) {
-		return 0;
-	}
-	static szMenu[512], iLen, iKey;
-	iKey = MENU_KEY_0;
-#if defined ADMIN_LOADER
-	new iExp = admin_expired(id);
-	if(iExp > 0) {
-		new sysTime = get_systime();
-		if(iExp - sysTime > 0) {
-			if((iExp - sysTime) / 86400 > 0) {
-				iLen = formatex(szMenu, charsmax(szMenu), "\y|\rElement\y| VIP Menu: \r[\y%d day.\r]^n^n", ((iExp - sysTime) / 86400));
-			} else {
-				iLen = formatex(szMenu, charsmax(szMenu), "\y|\rElement\y| VIP Menu: \r[\y%dh. %dmin.\r]^n^n", ((iExp - sysTime) / 3600), (((iExp - sysTime) / 60) - (((iExp - sysTime) / 3600) * 60)));
-			}
-		}
-	} else if(iExp == 0) {
-		iLen = formatex(szMenu, charsmax(szMenu), "\y\y|\rElement\y| VIP Menu: \r[\ylifetime\r]^n^n");
-	} else if(IsNightMode) {
-		iLen = formatex(szMenu, charsmax(szMenu), "\y\y|\rElement\y| FREE VIP Menu: \w(\r22\w-\r10\w)^n^n");
-	}	
-#endif
-	iKey |= MENU_KEY_1|MENU_KEY_2;
-	iLen += formatex(szMenu[iLen], charsmax(szMenu) - iLen, "\r1. \wTake \yAK47^n\r2. \wTake \yM4A1^n^n");
-	iKey |= MENU_KEY_3;
-	iLen += formatex(szMenu[iLen], charsmax(szMenu) - iLen, "\r3. \wPistol on spawn \r[\y%s\r]^n", iPistol[id] == 0 ? "Deagle" : iPistol[id] == 1 ? "USP" : "Glock");
-#if defined DAMAGER_MENU
-	iKey |= MENU_KEY_4;
-	iLen += formatex(szMenu[iLen], charsmax(szMenu) - iLen, "\r4. \wDamager \r[\y%s\r]^n^n", g_isSwitchDmg[id] ? "Enabled" : "Disabled");
-#endif
-	formatex(szMenu[iLen], charsmax(szMenu) - iLen, "\r0. \wExit");
-	show_menu(id, iKey, szMenu, -1, "@VipMenu");
-	return PLUGIN_HANDLED;
-}
-
-@VipMenuHandler(id, iKey) {
-#if defined DAMAGER_MENU
-	if(iKey > 4 || g_bUseWeapon[id]) {
-		return 0;
-	}
+bool:rvs_is_user_vip_no_text(const pPlayer) {
+#if defined STEAM_VIP
+    return bool:(get_user_flags(pPlayer) & ADMIN_LEVEL_H || g_blNightMode || is_user_steam(pPlayer));
 #else
-	if(iKey > 3 || g_bUseWeapon[id]) {
-		return 0;
-	}
-#endif
-	switch(iKey) {
-		case 0..1: {
-			static const szChoosedBP[] = { 90, 90 };
-			static const szChoosedWP[][] = { "weapon_ak47", "weapon_m4a1" };
-			g_bUseWeapon[id] = true;
-			return give_item_ex(id, szChoosedWP[iKey], szChoosedBP[iKey]);
-		}
-        case 2: {
-			@GivePistol(id);
-		}
-#if defined DAMAGER_MENU
-		case 3: {
-			g_isSwitchDmg[id] = (g_isSwitchDmg[id]) ? 0 : 1;
-			num_to_str(g_isSwitchDmg[id], g_szText, charsmax(g_szText));
-			client_cmd(id, "setinfo _damager %s", g_szText);
-			return @clcmd_VipMenu(id);
-		}
-#endif
-	}
-	return PLUGIN_HANDLED;
-}
-
-stock give_item_ex(id, currWeaponName[], ammoAmount) {
-	rg_give_item(id, currWeaponName, GT_REPLACE);
-	rg_set_user_bpammo(id, rg_get_weapon_info(currWeaponName, WI_ID), ammoAmount);
-	engclient_cmd(id, currWeaponName);
-	return PLUGIN_HANDLED;
-}
-
-@GivePistol(id) {
-	iPistol[id] >= 2 ? (iPistol[id] = 0) : iPistol[id]++;
-	@clcmd_VipMenu(id);
-	return PLUGIN_HANDLED;
-}
-
-bool:isAllowToUse(id) {
-	if(!g_bUserVip[id]) {
-		client_print_color(id, print_team_default, "%s This command can only be used by a VIP player!", PREFIX);
-		return false;
-	}
-	if(!is_user_alive(id)) {
-		client_print_color(id, print_team_default, "%s You must be alive to use this command!", PREFIX);
-		return false;
-	}
-	if(!g_iRoundCount) {
-		client_print_color(id, print_team_default, "%s Warm-up round. It is forbidden to use that command!", PREFIX);
-		return false;
-	}
-	if(g_bUseWeapon[id]) {
-		client_print_color(id, print_team_default, "%s You've already picked up a weapon this round!", PREFIX);
-		return false;
-	}
-	if(g_iRoundCount < VIPROUND) {
-		client_print_color(id, print_team_default, "%s VIP Weapons are available after ^3%d ^1round!", PREFIX, VIPROUND);
-		return false;
-	}
-	return true;
-}
-
-@clcmd_WantVip(id) {
-   show_motd(id, "/addons/amxmodx/configs/want_vip.html");
-}
-
-@clcmd_SwitchDmg(id) {
-	if(!isUserVip(id)) {
-		client_print_color(id, print_team_default, "%s This command can only be used by a VIP player.", PREFIX);
-		return 0;
-	}
-	g_isSwitchDmg[id] = !g_isSwitchDmg[id];
-	if(g_isSwitchDmg[id]) client_cmd(id, "setinfo _damager on");
-	else client_cmd(id, "setinfo _damager off");
-
-	client_print_color(id, 0, "%s You ^3%s ^1damager for yourself", PREFIX, g_isSwitchDmg[id] ? "Enabled" : "Disabled");
-	return PLUGIN_CONTINUE;
-}
-
-stock isUserVip(const id) {
-#if defined NIGHT_MODE
-	return bool:(get_user_flags(id) & VIP_ACCESS || IsNightMode);
-#else
-	return bool:(get_user_flags(id) & VIP_ACCESS);
+    return bool:(get_user_flags(pPlayer) & ADMIN_LEVEL_H || g_blNightMode);
 #endif
 }
