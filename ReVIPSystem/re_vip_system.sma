@@ -8,7 +8,7 @@ native admin_expired(index);
 /* YOU CAN UNDEFINE WHATEVER YOU WANT */
 #define VIP_ACCESS ADMIN_LEVEL_H    // VIP ACCESS    
 #define DAMAGER                     // DAMAGE THINGS
-#define VIP_MODEL                   // IP MODELS
+//#define VIP_MODEL                   // IP MODELS
 #define STEAM_VIP		            // STEAM WILL BE VIP EVERYTIME IF DEFINE IS ON
 #define BONUS_HS        10.0        // The amount of added HP per kill in the head (set to 0.0 if you don't need to add, since you can't comment out)
 #define BONUS_NORMAL    0.0         // The number of added HP per kill (set to 0.0 if you do not need to add, since you cannot comment out)
@@ -138,10 +138,10 @@ public OnConfigsExecuted() {
     menu_additem(iMenu, "\yTake \wAK47");
     menu_additem(iMenu, "\yTake \wM4A1^n");
 
-    menu_additem(iMenu, fmt("\yPistol on spawn \r[\y%s\r]", g_iPistol[pPlayer] == 0 ? "Deagle" : g_iPistol[pPlayer] == 1 ? "USP" : "Glock"));
+    menu_additem(iMenu, fmt("\yPistol on spawn \r[\w%s\r]", g_iPistol[pPlayer] == 0 ? "Deagle" : g_iPistol[pPlayer] == 1 ? "USP" : "Glock"));
 
     #if defined DAMAGER
-    menu_additem(iMenu, fmt("\yDamager \r[\y%s\r]", g_iSwitchDmg[pPlayer] ? "Enabled" : "Disabled"));
+    menu_additem(iMenu, fmt("\yDamager \r[\w%s\r]", g_iSwitchDmg[pPlayer] ? "Enabled" : "Disabled"));
     #endif
 
     menu_display(pPlayer, iMenu);
@@ -222,7 +222,7 @@ public OnConfigsExecuted() {
 }
 
 @CBasePlayer_Spawn_Post(const pPlayer) {
-    if(get_member(pPlayer, m_bJustConnected)) {
+    if(!rvs_is_user_vip_no_text(pPlayer) || get_member(pPlayer, m_bJustConnected)) {
         return;
     }
 
@@ -243,7 +243,7 @@ public OnConfigsExecuted() {
         case 2: { rg_give_item(pPlayer, "weapon_glock18", GT_REPLACE); rg_set_user_bpammo(pPlayer, WEAPON_GLOCK18, 120); }
     }
 
-    if(g_iRound >= VIPROUND && rvs_is_user_vip_no_text(pPlayer)) {
+    if(g_iRound >= VIPROUND) {
         @clcmd_vipmenu(pPlayer);
     }
 }
