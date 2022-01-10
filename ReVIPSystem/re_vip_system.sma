@@ -336,8 +336,8 @@ bool:rvs_is_user_vip(const pPlayer) {
 
 bool:rvs_is_user_vip_no_text(const pPlayer) {
 #if defined STEAM_VIP
-    return bool:(get_user_flags(pPlayer) & ADMIN_LEVEL_H || g_blNightMode || is_user_steam(pPlayer));
+    return bool:(get_user_flags(pPlayer) & VIP_ACCESS || g_blNightMode || is_user_steam(pPlayer));
 #else
-    return bool:(get_user_flags(pPlayer) & ADMIN_LEVEL_H || g_blNightMode);
+    return bool:(get_user_flags(pPlayer) & VIP_ACCESS || g_blNightMode);
 #endif
 }
