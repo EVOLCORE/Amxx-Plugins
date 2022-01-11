@@ -3,12 +3,10 @@
 #include <amxmodx>
 #include <reapi>
 
-native admin_expired(index);
-
 /* YOU CAN UNDEFINE WHATEVER YOU WANT */
 #define VIP_ACCESS ADMIN_LEVEL_H    // VIP ACCESS    
 #define DAMAGER                     // DAMAGE THINGS
-//#define VIP_MODEL                   // IP MODELS
+//#define VIP_MODEL                   // VIP MODELS
 #define STEAM_VIP		            // STEAM WILL BE VIP EVERYTIME IF DEFINE IS ON
 #define BONUS_HS        10.0        // The amount of added HP per kill in the head (set to 0.0 if you don't need to add, since you can't comment out)
 #define BONUS_NORMAL    0.0         // The number of added HP per kill (set to 0.0 if you do not need to add, since you cannot comment out)
@@ -41,8 +39,10 @@ g_blBuyzone;
 
 new HookChain:g_iHC_Spawn_Post;
 
+native native_Access_GetAccessInfo(id, sPassword[] = "", sAccess[] = "", sDateEnd[] = "", sFullName[] = "", sContacts[] = "");
+
 public plugin_init() {
-    register_plugin("[ReAPI] VIP system", "0.0.1", "mIDnight");
+    register_plugin("[ReAPI] VIP system", "1.7", "mIDnight");
 
     #if defined DAMAGER
         register_clcmd("say /damager", "@clcmd_damager");
@@ -107,45 +107,56 @@ public OnConfigsExecuted() {
 }
 
 @clcmd_vipmenu(const pPlayer) {
-    if(!rvs_is_user_vip(pPlayer)) {
-        return PLUGIN_HANDLED;
-    }
-
-    new iExp = admin_expired(pPlayer);
-    new iMenu;
-
-    if(iExp > 0) {
-        iExp -= get_systime();
- 
-        if(iExp > 0) {
-            iMenu = menu_create(fmt("\y|\rHyperWorld\y| VIP Menu: \r[\y%d day.\r]", iExp / 86400), "@clcmd_vipmenu_handler");
-        }
-        else {
-            iMenu = menu_create(fmt("\y|\rHyperWorld\y| VIP Menu: \r[\y%dh. %dmin.\r]", iExp / 3600, ((iExp / 60) - (iExp / 3600) * 60)), "@clcmd_vipmenu_handler");
-        }
-    }
-    else if(iExp == 0) {
-        iMenu = menu_create("\y\y|\rHyperWorld\y| VIP Menu: \r[\ylifetime\r]", "@clcmd_vipmenu_handler");
-    }
-    else {
+	
+	if(!rvs_is_user_vip(pPlayer)) {
+		return PLUGIN_HANDLED;
+	}
+	
+	new iExp = NULLENT, sDateEnd[ 128 ];
+	if(native_Access_GetAccessInfo(pPlayer, .sDateEnd = sDateEnd)) {
+		if(!equal(sDateEnd, "lifetime")) {
+			formatex(sDateEnd, charsmax(sDateEnd), "%s 00:00:00", sDateEnd );
+			iExp = parse_time(sDateEnd, "%d:%m:%Y %H:%M:%S") + 86400;
+		}
+	}
+	
+	new iMenu;
+	
+	if(iExp > 0) {
+		iExp -= get_systime();
+		
+		new iDays, iHours, iMinutes;
+		seconds_to_time(iExp, iDays, iHours, iMinutes);
+		
+		if(iDays > 0) {
+			iMenu = menu_create(fmt("\y|\rHyperWorld\y| VIP Menu: \r[\y%d day.\r]", iDays ), "@clcmd_vipmenu_handler");
+		}
+		else {
+			iMenu = menu_create(fmt("\y|\rHyperWorld\y| VIP Menu: \r[\y%dh. %dmin.\r]", iHours, iMinutes ), "@clcmd_vipmenu_handler");
+		}
+	}
+	else if(iExp == 0) {
+		iMenu = menu_create("\y\y|\rHyperWorld\y| VIP Menu: \r[\ylifetime\r]", "@clcmd_vipmenu_handler");
+	}
+	else {
 #if defined STEAM_VIP
-        iMenu = menu_create(fmt("\y\y|\rHyperWorld\y| FREE VIP Menu: %s", is_user_steam(pPlayer) ? "\w(\rSteam\w)" : "\w(\r22\w-\r10\w)"), "@clcmd_vipmenu_handler");
+		iMenu = menu_create(fmt("\y\y|\rHyperWorld\y| FREE VIP Menu: %s", is_user_steam(pPlayer) ? "\w(\rSteam\w)" : "\w(\r22\w-\r10\w)"), "@clcmd_vipmenu_handler");
 #else
-        iMenu = menu_create("\y\y|\rHyperWorld\y| FREE VIP Menu: \w(\r22\w-\r10\w)", "@clcmd_vipmenu_handler");
+		iMenu = menu_create("\y\y|\rHyperWorld\y| FREE VIP Menu: \w(\r22\w-\r10\w)", "@clcmd_vipmenu_handler");
 #endif
-    }
+	}
 
-    menu_additem(iMenu, "\yTake \wAK47");
-    menu_additem(iMenu, "\yTake \wM4A1^n");
+	menu_additem(iMenu, "\yTake \wAK47");
+	menu_additem(iMenu, "\yTake \wM4A1^n");
 
-    menu_additem(iMenu, fmt("\yPistol on spawn \r[\w%s\r]", g_iPistol[pPlayer] == 0 ? "Deagle" : g_iPistol[pPlayer] == 1 ? "USP" : "Glock"));
+	menu_additem(iMenu, fmt("\yPistol on spawn \r[\w%s\r]", g_iPistol[pPlayer] == 0 ? "Deagle" : g_iPistol[pPlayer] == 1 ? "USP" : "Glock"));
 
-    #if defined DAMAGER
-    menu_additem(iMenu, fmt("\yDamager \r[\w%s\r]", g_iSwitchDmg[pPlayer] ? "Enabled" : "Disabled"));
-    #endif
+	#if defined DAMAGER
+	menu_additem(iMenu, fmt("\yDamager \r[\w%s\r]", g_iSwitchDmg[pPlayer] ? "Enabled" : "Disabled"));
+	#endif
 
-    menu_display(pPlayer, iMenu);
-    return PLUGIN_HANDLED;
+	menu_display(pPlayer, iMenu);
+	return PLUGIN_HANDLED;
 }
 
 @clcmd_vipmenu_handler(const pPlayer, const iMenu, const iItem) {
@@ -188,7 +199,7 @@ public OnConfigsExecuted() {
     }
 
     g_iSwitchDmg[pPlayer] = !g_iSwitchDmg[pPlayer];
-    client_print_color(pPlayer, pPlayer, "^4[%s] ^1You ^4%s ^1damager for yourself", g_szTag, g_iSwitchDmg ? "Enabled" : "Disabled");
+    client_print_color(pPlayer, pPlayer, "^4[%s] ^1You ^4%s ^1damager for yourself", g_szTag, g_iSwitchDmg[pPlayer] ? "Enabled" : "Disabled");
     return PLUGIN_HANDLED;
 }
 #endif
@@ -336,8 +347,14 @@ bool:rvs_is_user_vip(const pPlayer) {
 
 bool:rvs_is_user_vip_no_text(const pPlayer) {
 #if defined STEAM_VIP
-    return bool:(get_user_flags(pPlayer) & VIP_ACCESS || g_blNightMode || is_user_steam(pPlayer));
+    return bool:(get_user_flags(pPlayer) & ADMIN_LEVEL_H || g_blNightMode || is_user_steam(pPlayer));
 #else
-    return bool:(get_user_flags(pPlayer) & VIP_ACCESS || g_blNightMode);
+    return bool:(get_user_flags(pPlayer) & ADMIN_LEVEL_H || g_blNightMode);
 #endif
+}
+
+stock seconds_to_time(iSec, &iDays, &iHours, &iMinutes) {
+    iDays = iSec / 60 / 60 / 24;
+    iHours = (iSec / 60 / 60) % 24;
+    iMinutes = (iSec / 60) % 60;
 }
