@@ -7,16 +7,7 @@
 #define ADMIN_GAG    ADMIN_KICK  // Authorized player to gag.
 #define DEFAULT_GAG_TIME   120     //default time gag example amx_gag mIDnight and it will auto gag him.
 
-new const szChatTag[] = "^4[Element]";
-
-new const g_szNames[][] = {
-	"Player",
-	"gam",
-	"war",
-	".com",
-	"koso",
-	"~"
-};
+new const szChatTag[] = "^4[HW]";
 
 enum _:IntData {
 	iGagTime[MAX_PLAYERS+1],
@@ -26,11 +17,10 @@ new g_int[IntData];
 
 public plugin_init() {
 	register_plugin("[ReAPI] Gag System", "1.4", "mIDnight");
-
 	register_dictionary("GagSystem.txt");
 
 	register_clcmd("say /gagmenu", "@clcmd_gagmenu");
-	register_clcmd("say !gagmenu", "@clcmd_gagmenu");
+	register_clcmd("amx_gagmenu", "@clcmd_gagmenu");
 	register_clcmd("say .gagmenu", "@clcmd_gagmenu");
 	register_clcmd("SetDuration", "@clcmd_settime");
 	register_concmd("amx_gag", "@clcmd_gag", ADMIN_GAG, "<name> <time>, gag the player.");
@@ -40,21 +30,6 @@ public plugin_init() {
 
 	RegisterHookChain(RG_CSGameRules_CanPlayerHearPlayer, "@CSGameRules_CanPlayerHearPlayer_Pre", .post = false);
 	RegisterHookChain(RG_CBasePlayer_SetClientUserInfoName, "@CBasePlayer_SetClientUserInfoName");
-}
-
-public client_putinserver(id) {
-	new name[32];
-	get_user_name(id, name, 31);
-	for(new i; i < sizeof(g_szNames); i++) {	
-		if(containi(name, g_szNames[i]) != -1) {
-			@rename(id);
-			return;
-		}
-	} 
-}
-
-@rename(id) {
-        server_cmd("amx_nick #%d ^"ElementPlayer^"", get_user_userid(id));
 }
 
 @clcmd_say(const id) {
@@ -71,7 +46,7 @@ public client_putinserver(id) {
 		return;
 	}
 
-	new menu = menu_create("\w[\rElement\w] \ySelect player to gag", "@clcmd_gagmenu_handler");
+	new menu = menu_create("\w[\rHyperWorld\w] \ySelect player to gag", "@clcmd_gagmenu_handler");
 
 	for(new i = 1; i <= MaxClients; i++) {
 		if(!is_user_connected(i) || is_user_bot(i) || get_user_flags(i) & ADMIN_IMMUNITY) {
@@ -112,7 +87,7 @@ public client_putinserver(id) {
 	read_args(szArg, charsmax(szArg));
 	remove_quotes(szArg);
 
-	if(!(g_int[iPickPlayer][id])) {
+	if(!(g_int[iPickPlayer][id]) || !is_user_connected(g_int[iPickPlayer][id])) {
 		client_print_color(id, print_team_red, "%L", LANG_PLAYER, "GAG_PLAYER_UNSELECTED", szChatTag);
 		return PLUGIN_HANDLED;
 	}
