@@ -1,154 +1,165 @@
 #include <amxmodx>
-#include <hamsandwich>
 #include <cstrike>
+#include <hamsandwich>
 #include <reapi>
 
-new stock SayTag[] = "Element";
+new const SayTag[] = "HW";
 
-new stock pPrimaryGun[][][] = {
-	{"",""},
-	{"M4A1","weapon_m4a1"},{"AK47","weapon_ak47"},{"AWP","weapon_awp"},{"FAMAS","weapon_famas"},{"GALIL","weapon_galil"}
+enum MenuNames {
+    WeaponMenu,
+    PrimaryMenu,
+    SecondaryMenu
 }
+new g_iMenu[MenuNames];
 
-new stock pSecondaryGun[][][] = {
-	{"",""},
-	{"USP","weapon_usp"},{"GLOCK","weapon_glock18"},{"DEAGLE","weapon_deagle"}
-}
+new const g_szPrimaryWeapons[][][] = {
+    {"M4A1","weapon_m4a1"},
+    {"AK47","weapon_ak47"},
+    {"AWP","weapon_awp"},
+    {"FAMAS","weapon_famas"},
+    {"GALIL","weapon_galil"}
+};
 
-new pPrimarySave[33],pSecondarySave[33],bool:pDontOpenMenu[33]
-new bool:g_blSilencer[MAX_CLIENTS + 1];
+new const g_szSecondaryWeapons[][][] = {
+    {"USP","weapon_usp"},
+    {"GLOCK","weapon_glock18"},
+    {"DEAGLE","weapon_deagle"}
+};
+
+new g_iPrimaryWeaponSave[MAX_CLIENTS + 1],
+    g_iSecondaryWeaponSave[MAX_CLIENTS + 1],
+    bool:g_blChosenWeapon[MAX_CLIENTS + 1],
+    bool:g_blM4a1Silencer[MAX_CLIENTS + 1];
 
 public plugin_init() {
-	register_plugin("[ReAPI] CSDM Weapons Menu", "1.0", "mIDnight")
-	
+	register_plugin("[ReAPI] CSDM weapons menu", "0.0.1", "mIDnight");
+
+	new const szWeaponMenu[][] = {
+		"say /guns",
+		"say /weapons"
+	};
+
+	for(new i = 0; i < sizeof(szWeaponMenu); i++) {
+		register_clcmd(szWeaponMenu[i], "@clcmd_weaponmenu");
+	}
+
 	RegisterHookChain(RG_CBasePlayer_Spawn, "@CBasePlayer_Spawn_Post", .post = true);
 	RegisterHookChain(RG_CBasePlayer_ImpulseCommands, "@CBasePlayer_ImpulseCommands_Pre", .post = false);
 	RegisterHookChain(RG_CBasePlayer_AddPlayerItem, "@CBasePlayer_AddPlayerItem_Pre", .post = false);
-	register_clcmd("say /guns", "@pOpenMenu"); register_clcmd("say /weapons", "@pOpenMenu");
-
 	RegisterHam(Ham_Weapon_SecondaryAttack, "weapon_m4a1", "@Ham_Weapon_SecondaryAttack_Post", .Post = true);
 }
 
-public client_putinserver(pPlayer) {
-	g_blSilencer[pPlayer] = false;
-	client_cmd(pPlayer, "hideradar");
+public client_disconnected(pPlayer) {
+   g_blChosenWeapon[pPlayer] = false;
+   g_blM4a1Silencer[pPlayer] = false;
+}
+
+@clcmd_weaponmenu(const pPlayer) {
+   if(g_blChosenWeapon[pPlayer]) {
+      g_blChosenWeapon[pPlayer] = false;
+      client_print_color(pPlayer, pPlayer, "^4[%s]^1 You have activated the weapon menu. Next time you can choose a new weapon again.", SayTag);
+   }
 }
 
 @CBasePlayer_Spawn_Post(const pPlayer) {
-	set_member(pPlayer, m_iHideHUD, get_member(pPlayer, m_iHideHUD) | (HIDEHUD_TIMER | HIDEHUD_MONEY));
-	if(!is_user_alive(pPlayer)) return;
-	rg_remove_all_items(pPlayer);
-	rg_give_item(pPlayer,"weapon_knife");
-	set_entvar(pPlayer,var_armorvalue,Float:100.0); //rg_set_user_armor(id, 100, ARMOR_VESTHELM)
-	switch(pDontOpenMenu[pPlayer]) {
-		case true:pOldWeapon(pPlayer);
-		case false:pStartMenu(pPlayer);
-	}
-}
+   if(get_member(pPlayer, m_bJustConnected)) {
+      return;
+   }
+   
+   set_member(pPlayer, m_iHideHUD, get_member(pPlayer, m_iHideHUD) | (HIDEHUD_TIMER | HIDEHUD_MONEY));
+   rg_remove_all_items(pPlayer);
+   rg_give_item(pPlayer, "weapon_knife");
+   set_entvar(pPlayer, var_armorvalue, 100.0);
 
-@pOpenMenu(pPlayer) {
-	switch(pDontOpenMenu[pPlayer]) {
-		case true: {
-			pDontOpenMenu[pPlayer] = false;
-			client_print_color(pPlayer, pPlayer, "^4[%s]^1 You have activated the weapon menu. Next time you can choose a new weapon again.",SayTag);
-		}
-	}
-	return PLUGIN_HANDLED;
-}
-
-public pStartMenu(pPlayer){
-	static Item[256]
-	formatex(Item, charsmax(Item),"\y|\rElement\y| \d- \yWeapons Menu");new Menu = menu_create(Item, "pStartMenu_");
-	
-	formatex(Item, charsmax(Item),"\y|\rElement\y| \d- \wNew Weapons");menu_additem(Menu, Item, "1");
-	formatex(Item, charsmax(Item),"\y|\rElement\y| \d- \wPrevious Weapons");menu_additem(Menu, Item, "2");
-	formatex(Item, charsmax(Item),"\y|\rElement\y| \d- \w2+Don't show menu again");menu_additem(Menu, Item, "3");
-	
-	menu_setprop(Menu, MPROP_EXIT, MEXIT_NEVER); menu_display(pPlayer, Menu);
-}
-
-public pStartMenu_(pPlayer, menu, item) {
-	new data[6], iName[64], access, callback,key;
-	menu_item_getinfo(menu, item, access, data,5, iName, 63, callback);
-	key = str_to_num(data)
-	switch(key) {
-		case 1:pPrimaryMenu(pPlayer);
-		case 2:pOldWeapon(pPlayer);
-		case 3:client_print_color(pPlayer, pPlayer, "^4[%s]^1 You will no longer be shown the Weapon Menu. Type: ^3/guns ^1or ^3/weapons^1 if you want to be shown again.",SayTag),pOldWeapon(pPlayer),pDontOpenMenu[pPlayer] = true;
-	}
-	menu_destroy(menu);
-	return PLUGIN_HANDLED;
-}
-
-public pPrimaryMenu(pPlayer) {
-	if(!is_user_alive(pPlayer)) return;
-	static Item[256],NumToString[5];
-	formatex(Item, charsmax(Item),"\y|\rElement\y| \d- \wPrimary Weapon Selection");new Menu = menu_create(Item, "pPrimaryMenu_");
-	for(new i=1; i < sizeof(pPrimaryGun); i++) {
-		num_to_str(i, NumToString, 5);
-		formatex(Item, charsmax(Item), "\y|\r%s\y|",pPrimaryGun[i][0][0]);menu_additem(Menu, Item, NumToString);
-	}	
-	menu_setprop(Menu, MPROP_EXIT, MEXIT_NEVER); menu_display(pPlayer, Menu);
-}
-
-public pPrimaryMenu_(pPlayer, menu, item) {
-	new data[6], iName[64], access, callback,key;
-	menu_item_getinfo(menu, item, access, data,5, iName, 63, callback);
-	key = str_to_num(data);
-	pPrimarySave[pPlayer] = key;
-	rg_give_item(pPlayer,pPrimaryGun[key][1][0]);
-	pSecondaryMenu(pPlayer);
-	menu_destroy(menu);
-	return PLUGIN_HANDLED;
-}
-
-public pSecondaryMenu(pPlayer) {
-	if(!is_user_alive(pPlayer)) return;
-	static Item[256],NumToString[5];
-	formatex(Item, charsmax(Item),"\y|\rElement\y| \d- \wSecondary Weapon Selection");new Menu = menu_create(Item, "pSecondaryMenu_");
-	for(new i=1; i < sizeof(pSecondaryGun); i++) {
-		num_to_str(i, NumToString, 5);
-		formatex(Item, charsmax(Item), "\y|\r%s\y|",pSecondaryGun[i][0][0]);menu_additem(Menu, Item, NumToString);
-	}	
-	menu_setprop(Menu, MPROP_EXIT, MEXIT_NEVER); menu_display(pPlayer, Menu);
-}
-
-public pSecondaryMenu_(pPlayer, menu, item) {
-	new data[6], iName[64], access, callback,key;
-	menu_item_getinfo(menu, item, access, data,5, iName, 63, callback);
-	key = str_to_num(data);
-	pSecondarySave[pPlayer] = key;
-	rg_give_item(pPlayer,pSecondaryGun[key][1][0]);
-	menu_destroy(menu);
-	return PLUGIN_HANDLED;
-}
-
-stock pOldWeapon(pPlayer){
-	rg_give_item(pPlayer,pPrimaryGun[pPrimarySave[pPlayer]][1][0])
-	rg_give_item(pPlayer,pSecondaryGun[pSecondarySave[pPlayer]][1][0])
+   g_blChosenWeapon[pPlayer] ? @GiveOldWeapons(pPlayer) : menu_display(pPlayer, g_iMenu[WeaponMenu]);
 }
 
 @CBasePlayer_ImpulseCommands_Pre(const pPlayer) {
-	static iImpulse;
-	iImpulse = get_entvar(pPlayer, var_impulse);
+   static iImpulse;
+   iImpulse = get_entvar(pPlayer, var_impulse);
 
-	if(iImpulse == 201) {
-		set_entvar(pPlayer, var_impulse, 0);
-		return HC_SUPERCEDE;
-	}
-	return HC_CONTINUE;
-}
-
-@Ham_Weapon_SecondaryAttack_Post(pWeapon) {
-	new pPlayer = get_member(pWeapon, m_pPlayer);
-
-	g_blSilencer[pPlayer] = bool:cs_get_weapon_silen(pWeapon);
+   if(iImpulse == 201) {
+      set_entvar(pPlayer, var_impulse, 0);
+      return HC_SUPERCEDE;
+   }
+   return HC_CONTINUE;
 }
 
 @CBasePlayer_AddPlayerItem_Pre(const pPlayer, const pItem) {
-	if(get_member(pItem, m_iId) != WEAPON_M4A1) {
-		return;
-	}
+   if(get_member(pItem, m_iId) != WEAPON_M4A1) {
+      return;
+   }
 
-	cs_set_weapon_silen(pItem, g_blSilencer[pPlayer]);
+   cs_set_weapon_silen(pItem, g_blM4a1Silencer[pPlayer]);
+}
+
+@Ham_Weapon_SecondaryAttack_Post(pWeapon) {
+   g_blM4a1Silencer[get_member(pWeapon, m_pPlayer)] = bool:cs_get_weapon_silen(pWeapon);
+}
+
+@RegisterMenus() {
+   g_iMenu[WeaponMenu] = menu_create("\y|\rHyperWorld\y| \d- \yWeapons Menu", "@WeaponMenu_Handler");
+
+   menu_additem(g_iMenu[WeaponMenu], "\r|\wNew Weapons\r|");
+   menu_additem(g_iMenu[WeaponMenu], "\r|\wPrevious Weapons\r|");
+   menu_additem(g_iMenu[WeaponMenu], "\r|\w2+Don't show menu again\r|");
+
+   menu_setprop(g_iMenu[WeaponMenu], MPROP_EXIT, MEXIT_NEVER);
+
+   g_iMenu[PrimaryMenu] = menu_create("\y|\rHyperWorld\y| \d- \yPrimary Weapon Selection", "@PrimaryMenu_Handler");
+
+   for(new i = 0; i < sizeof(g_szPrimaryWeapons); i++) {
+      menu_additem(g_iMenu[PrimaryMenu], fmt("\r|\w%s\r|", g_szPrimaryWeapons[i][0][0]));
+   }
+   menu_setprop(g_iMenu[PrimaryMenu], MPROP_EXIT, MEXIT_NEVER);
+
+   g_iMenu[SecondaryMenu] = menu_create("\y|\rHyperWorld\y| \d- \ySecondary Weapon Selection", "@SecondaryMenu_Handler");
+
+   for(new i = 0; i < sizeof(g_szSecondaryWeapons); i++) {
+      menu_additem(g_iMenu[SecondaryMenu], fmt("\r|\w%s\r|", g_szSecondaryWeapons[i][0][0]));
+   }
+   menu_setprop(g_iMenu[SecondaryMenu], MPROP_EXIT, MEXIT_NEVER);
+}
+
+@WeaponMenu_Handler(const pPlayer, const iMenu, const iItem) {
+   if(!is_user_alive(pPlayer) || iItem == MENU_EXIT) {
+      return;
+   }
+   switch(iItem) {
+      case 0: {
+         menu_display(pPlayer, g_iMenu[PrimaryMenu]);
+      }
+      case 1: {
+         @GiveOldWeapons(pPlayer);
+      }
+      case 2: {
+         client_print_color(pPlayer, pPlayer, "^4[%s]^1 You will no longer be shown the Weapon Menu. Type: ^3/guns ^1or ^3/weapons^1 if you want to be shown again.", SayTag);
+         @GiveOldWeapons(pPlayer);
+         g_blChosenWeapon[pPlayer] = true;
+      }
+   }
+}
+
+@PrimaryMenu_Handler(const pPlayer, const iMenu, const iItem) {
+   if(!is_user_alive(pPlayer) || iItem == MENU_EXIT) {
+      return;
+   }
+
+   g_iPrimaryWeaponSave[pPlayer] = iItem;
+   rg_give_item(pPlayer, g_szPrimaryWeapons[iItem][1][0]);
+   menu_display(pPlayer, g_iMenu[SecondaryMenu]);
+}
+
+@SecondaryMenu_Handler(const pPlayer, const iMenu, const iItem) {
+   if(!is_user_alive(pPlayer) || iItem == MENU_EXIT) {
+      return;
+   }
+
+   g_iSecondaryWeaponSave[pPlayer] = iItem;
+   rg_give_item(pPlayer, g_szSecondaryWeapons[iItem][1][0]);
+}
+
+@GiveOldWeapons(const pPlayer) {
+   rg_give_item(pPlayer, g_szPrimaryWeapons[g_iPrimaryWeaponSave[pPlayer]][1][0]);
+   rg_give_item(pPlayer, g_szSecondaryWeapons[g_iSecondaryWeaponSave[pPlayer]][1][0]);
 }
