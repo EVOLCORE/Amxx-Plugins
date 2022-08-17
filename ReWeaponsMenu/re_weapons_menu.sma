@@ -32,7 +32,7 @@ new g_iPrimaryWeaponSave[MAX_CLIENTS + 1],
     bool:g_blM4a1Silencer[MAX_CLIENTS + 1];
 
 public plugin_init() {
-	register_plugin("[ReAPI] CSDM weapons menu", "0.0.1", "mIDnight");
+	register_plugin("[ReAPI] CSDM weapons menu", "0.0.1", "Schwarper");
 
 	new const szWeaponMenu[][] = {
 		"say /guns",
@@ -47,6 +47,7 @@ public plugin_init() {
 	RegisterHookChain(RG_CBasePlayer_ImpulseCommands, "@CBasePlayer_ImpulseCommands_Pre", .post = false);
 	RegisterHookChain(RG_CBasePlayer_AddPlayerItem, "@CBasePlayer_AddPlayerItem_Pre", .post = false);
 	RegisterHam(Ham_Weapon_SecondaryAttack, "weapon_m4a1", "@Ham_Weapon_SecondaryAttack_Post", .Post = true);
+	@RegisterMenus();
 }
 
 public client_disconnected(pPlayer) {
