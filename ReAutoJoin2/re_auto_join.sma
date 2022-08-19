@@ -2,13 +2,13 @@
 #include <reapi>
 
 public plugin_init() {
-	register_plugin("[ReAPI] Auto join team", "1.1", "mIDnight");
+	register_plugin("[ReAPI] Auto join team", "1.2", "mIDnight");
 
 	RegisterHookChain(RG_CBasePlayer_Spawn, "@CBasePlayer_Spawn_Post", .post = true);
-	RegisterHookChain(RG_ShowVGUIMenu, "@ShowVGUIMenu");
+	RegisterHookChain(RG_ShowVGUIMenu, "@ShowVGUIMenu_Pre", .post = false);
 	RegisterHookChain(RG_HandleMenu_ChooseTeam, "@HandleMenu_ChooseTeam_Pre", .post = false);
 	RegisterHookChain(RG_HandleMenu_ChooseTeam, "@HandleMenu_ChooseTeam_Post", .post = true);
-	register_clcmd("chooseteam", "@chooseteam");
+//	register_clcmd("chooseteam", "@chooseteam");
 }
 
 public client_putinserver(pPlayer) {
@@ -16,20 +16,24 @@ public client_putinserver(pPlayer) {
 	rg_join_team(pPlayer, rg_get_join_team_priority());
 }
 
-@chooseteam(pPlayer) {
-	if(get_user_flags(pPlayer) & ADMIN_KICK)
-	return PLUGIN_CONTINUE;
-	else {
-		client_print_color(pPlayer, pPlayer, "^4[Element]^1 You have not access to choose team.");
-	}
-	return PLUGIN_HANDLED;
-}
+/* @chooseteam(const pPlayer) {
+  if(~get_user_flags(pPlayer) & ADMIN_KICK) {
+    client_print_color(pPlayer, pPlayer, "^4[HW]^1 You have not access to choose team.");
+    return PLUGIN_HANDLED;
+  }
 
-@ShowVGUIMenu(pPlayer, VGUIMenu:menu_type, bitsSlots, szOldMenu[]) {
-	if(!strcmp(szOldMenu, "#IG_Team_Select")) {
+  return PLUGIN_CONTINUE;
+} */
+
+@ShowVGUIMenu_Pre(pPlayer, VGUIMenu:menu_type, bitsSlots, szOldMenu[]) {
+	if(menu_type != VGUI_Menu_Team || get_member(pPlayer, m_bJustConnected)
+	|| !strcmp(szOldMenu, "#IG_Team_Select") || get_user_flags(pPlayer) & ADMIN_KICK) {
 		SetHookChainArg(3, ATYPE_INTEGER, bitsSlots | (1 << 5));
 		SetHookChainArg(4, ATYPE_STRING, "#IG_Team_Select_Spect");
+		return HC_CONTINUE;
 	}
+	set_member(pPlayer, m_iMenu, 0);
+	return HC_SUPERCEDE;
 }
 
 @CBasePlayer_Spawn_Post(pPlayer) {
@@ -37,7 +41,12 @@ public client_putinserver(pPlayer) {
 }
 
 @HandleMenu_ChooseTeam_Pre(pPlayer) {
-	set_member_game(m_bFreezePeriod, 1)
+	if(get_member(pPlayer, m_bJustConnected) || get_user_flags(pPlayer) & ADMIN_KICK) {
+		set_member_game(m_bFreezePeriod, 1)
+		return HC_CONTINUE;
+	}
+	SetHookChainReturn(ATYPE_INTEGER, false);
+	return HC_SUPERCEDE;
 }
 
 @HandleMenu_ChooseTeam_Post(pPlayer) {
