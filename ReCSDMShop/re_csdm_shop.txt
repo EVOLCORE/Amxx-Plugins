@@ -1,0 +1,17 @@
+[en]
+ONE_USE = %s ^3You used this feature in this spawn.
+BUY_ITEM = %s ^1Successful you have purchased ^4%s.
+INSUFFICIENT_COST = %s ^3Insufficient points.
+GODMODE_CLOSE = %s ^3The godmode has expired.
+GIVE_HEGRENADE_CLOSE = %s^3 Feature 1 HE every 10 seconds has expired.
+GIVE_HEALTH_CLOSE = %s^3 10 Feature 10 HP every 10 seconds has expired.
+UNLIMITED_AMMO_CLOSE = %s^3 The unlimited ammo feature has expired.
+
+[sr]
+ONE_USE = %s ^3Vec ste je iskoristili ovu funkciju, sacekajte novi spawn.
+BUY_ITEM = %s ^1Uspesno ste kupili ^4%s.
+INSUFFICIENT_COST = %s ^3Nemate dovoljno bodova.
+GODMODE_CLOSE = %s ^3 Funkcija GodMode je istekao.
+GIVE_HEGRENADE_CLOSE = %s^3 Funkciju 1 bomba svaki 10 secunde je istekla.
+GIVE_HEALTH_CLOSE = %s^3 Funkciju 10 hp u svaki 10 secunnde je istekla.
+UNLIMITED_AMMO_CLOSE = %s^3 Funkciju neogranicena municija je istekla.
