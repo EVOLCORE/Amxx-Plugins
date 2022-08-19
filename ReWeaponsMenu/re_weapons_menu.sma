@@ -32,7 +32,7 @@ new g_iPrimaryWeaponSave[MAX_CLIENTS + 1],
     bool:g_blM4a1Silencer[MAX_CLIENTS + 1];
 
 public plugin_init() {
-	register_plugin("[ReAPI] CSDM weapons menu", "0.0.1", "Schwarper");
+	register_plugin("[ReAPI] CSDM weapons menu", "0.0.1", "mIDnight");
 
 	new const szWeaponMenu[][] = {
 		"say /guns",
