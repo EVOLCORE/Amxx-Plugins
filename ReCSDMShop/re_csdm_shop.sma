@@ -44,7 +44,7 @@ new bool:g_blOneUse[MAX_PLAYERS+1][14];
 public plugin_init() {
 	register_plugin("[ReAPI] DeathMatch Shop", "0.1", "mIDnight");
 
-	register_dictionary("re_dm_shop.txt");
+	register_dictionary("re_csdm_shop.txt");
 
 	register_clcmd("say /market", "@clcmd_dmshop");
 	register_clcmd("nightvision", "@clcmd_dmshop");
