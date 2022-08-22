@@ -34,7 +34,7 @@ new g_iPrimaryWeaponSave[MAX_CLIENTS + 1],
     bool:g_blM4a1Silencer[MAX_CLIENTS + 1];
 
 public plugin_init() {
-	register_plugin("[ReAPI] Mode Switch", "0.0.3", "mIDnight");
+	register_plugin("[ReAPI] CSDM Weapons menu", "0.0.3", "mIDnight");
 
 	new szWeaponMenu[][] = {"say /guns", "say_team /guns", "say /weapons", "say_team /weapons"};
 
