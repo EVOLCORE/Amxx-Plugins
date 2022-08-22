@@ -5,6 +5,8 @@
 
 new const SayTag[] = "HW";
 
+#define register_cmd_list(%0,%1,%2)            for (new i = 0; i < sizeof(%1); i++) register_%0(%1[i], %2)
+
 enum MenuNames {
     WeaponMenu,
     PrimaryMenu,
@@ -32,16 +34,11 @@ new g_iPrimaryWeaponSave[MAX_CLIENTS + 1],
     bool:g_blM4a1Silencer[MAX_CLIENTS + 1];
 
 public plugin_init() {
-	register_plugin("[ReAPI] CSDM weapons menu", "0.0.1", "mIDnight");
+	register_plugin("[ReAPI] Mode Switch", "0.0.3", "mIDnight");
 
-	new const szWeaponMenu[][] = {
-		"say /guns",
-		"say /weapons"
-	};
+	new szWeaponMenu[][] = {"say /guns", "say_team /guns", "say /weapons", "say_team /weapons"};
 
-	for(new i = 0; i < sizeof(szWeaponMenu); i++) {
-		register_clcmd(szWeaponMenu[i], "@clcmd_weaponmenu");
-	}
+	register_cmd_list(clcmd, szWeaponMenu, "@clcmd_weaponmenu");
 
 	RegisterHookChain(RG_CBasePlayer_Spawn, "@CBasePlayer_Spawn_Post", .post = true);
 	RegisterHookChain(RG_CBasePlayer_ImpulseCommands, "@CBasePlayer_ImpulseCommands_Pre", .post = false);
@@ -90,7 +87,6 @@ public client_disconnected(pPlayer) {
    if(get_member(pItem, m_iId) != WEAPON_M4A1) {
       return;
    }
-
    cs_set_weapon_silen(pItem, g_blM4a1Silencer[pPlayer]);
 }
 
@@ -99,6 +95,7 @@ public client_disconnected(pPlayer) {
 }
 
 @RegisterMenus() {
+   //Weapon Menu
    g_iMenu[WeaponMenu] = menu_create("\y|\rHyperWorld\y| \d- \yWeapons Menu", "@WeaponMenu_Handler");
 
    menu_additem(g_iMenu[WeaponMenu], "\r|\wNew Weapons\r|");
@@ -107,6 +104,7 @@ public client_disconnected(pPlayer) {
 
    menu_setprop(g_iMenu[WeaponMenu], MPROP_EXIT, MEXIT_NEVER);
 
+   //Primary Menu
    g_iMenu[PrimaryMenu] = menu_create("\y|\rHyperWorld\y| \d- \yPrimary Weapon Selection", "@PrimaryMenu_Handler");
 
    for(new i = 0; i < sizeof(g_szPrimaryWeapons); i++) {
@@ -114,6 +112,7 @@ public client_disconnected(pPlayer) {
    }
    menu_setprop(g_iMenu[PrimaryMenu], MPROP_EXIT, MEXIT_NEVER);
 
+   //Second Menu
    g_iMenu[SecondaryMenu] = menu_create("\y|\rHyperWorld\y| \d- \ySecondary Weapon Selection", "@SecondaryMenu_Handler");
 
    for(new i = 0; i < sizeof(g_szSecondaryWeapons); i++) {
