@@ -4,10 +4,10 @@
 #include <reapi>
 
 /* YOU CAN UNDEFINE WHATEVER YOU WANT */
-#define VIP_ACCESS ADMIN_LEVEL_H    // VIP ACCESS    
+#define VIP_ACCESS ADMIN_LEVEL_H    // VIP ACCESS
 #define DAMAGER                     // DAMAGE THINGS
 //#define VIP_MODEL                   // VIP MODELS
-#define STEAM_VIP		            // STEAM WILL BE VIP EVERYTIME IF DEFINE IS ON
+//#define STEAM_VIP		            // STEAM WILL BE VIP EVERYTIME IF DEFINE IS ON
 #define BONUS_HS        10.0        // The amount of added HP per kill in the head (set to 0.0 if you don't need to add, since you can't comment out)
 #define BONUS_NORMAL    0.0         // The number of added HP per kill (set to 0.0 if you do not need to add, since you cannot comment out)
 #define MAX_HP          100.0       // Max HP
@@ -42,7 +42,7 @@ new HookChain:g_iHC_Spawn_Post;
 native native_Access_GetAccessInfo(id, sPassword[] = "", sAccess[] = "", sDateEnd[] = "", sFullName[] = "", sContacts[] = "");
 
 public plugin_init() {
-    register_plugin("[ReAPI] VIP system", "1.7", "mIDnight");
+    register_plugin("[ReAPI] VIP system", "1.8", "mIDnight");
 
     #if defined DAMAGER
         register_clcmd("say /damager", "@clcmd_damager");
@@ -107,11 +107,10 @@ public OnConfigsExecuted() {
 }
 
 @clcmd_vipmenu(const pPlayer) {
-	
 	if(!rvs_is_user_vip(pPlayer)) {
 		return PLUGIN_HANDLED;
 	}
-	
+
 	new iExp = NULLENT, sDateEnd[ 128 ];
 	if(native_Access_GetAccessInfo(pPlayer, .sDateEnd = sDateEnd)) {
 		if(!equal(sDateEnd, "lifetime")) {
@@ -119,15 +118,15 @@ public OnConfigsExecuted() {
 			iExp = parse_time(sDateEnd, "%d:%m:%Y %H:%M:%S") + 86400;
 		}
 	}
-	
+
 	new iMenu;
-	
+
 	if(iExp > 0) {
 		iExp -= get_systime();
-		
+
 		new iDays, iHours, iMinutes;
 		seconds_to_time(iExp, iDays, iHours, iMinutes);
-		
+
 		if(iDays > 0) {
 			iMenu = menu_create(fmt("\y|\rHyperWorld\y| VIP Menu: \r[\y%d day.\r]", iDays ), "@clcmd_vipmenu_handler");
 		}
@@ -160,7 +159,7 @@ public OnConfigsExecuted() {
 }
 
 @clcmd_vipmenu_handler(const pPlayer, const iMenu, const iItem) {
-    if(!rvs_is_user_vip(pPlayer)) {
+    if(!rvs_is_user_vip(pPlayer) || !is_user_alive(pPlayer)) {
         menu_destroy(iMenu);
         return PLUGIN_HANDLED;
     }
@@ -233,7 +232,7 @@ public OnConfigsExecuted() {
 }
 
 @CBasePlayer_Spawn_Post(const pPlayer) {
-    if(!rvs_is_user_vip_no_text(pPlayer) || get_member(pPlayer, m_bJustConnected)) {
+    if(!rvs_is_user_vip_no_text(pPlayer) || get_member(pPlayer, m_bJustConnected) || !is_user_alive(pPlayer)) {
         return;
     }
 
@@ -264,9 +263,8 @@ public OnConfigsExecuted() {
 		return;
 	}
 
-	new Float:oldHP = get_entvar(pAttacker, var_health);
-	new Float:newHP = floatclamp(oldHP + (get_member(pVictim, m_bHeadshotKilled) ? BONUS_HS : BONUS_NORMAL), 0.0, MAX_HP);
-	set_entvar(pAttacker, var_health, newHP);
+	new Float:bonus = get_member(pVictim, m_bHeadshotKilled) ? BONUS_HS : BONUS_NORMAL;
+	set_entvar(pAttacker, var_health, floatmin(Float:get_entvar(pAttacker, var_health) + bonus, MAX_HP));
 }
 
 #if defined DAMAGER
@@ -282,7 +280,7 @@ public OnConfigsExecuted() {
     static const Float: iDamageCoords[][] = { {0.50, 0.43}, {0.55, 0.45}, {0.57, 0.50}, {0.55, 0.55}, {0.50, 0.57}, {0.45, 0.55}, {0.43, 0.50}, {0.45, 0.45} };
 
     if(rvs_is_user_vip_no_text(pAttacker)) {
-        set_hudmessage(0, 144, 200, iDamageCoords[iDamageCoordPos[pAttacker]][0], iDamageCoords[iDamageCoordPos[pAttacker]][1], _, _, 1.0);
+        set_hudmessage(64, 64, 0, iDamageCoords[iDamageCoordPos[pAttacker]][0], iDamageCoords[iDamageCoordPos[pAttacker]][1], _, _, 1.0); //0, 144, 200
         ShowSyncHudMsg(pAttacker, g_iHudSyncObj, "%.0f", flDamage);
     }
 
@@ -347,9 +345,9 @@ bool:rvs_is_user_vip(const pPlayer) {
 
 bool:rvs_is_user_vip_no_text(const pPlayer) {
 #if defined STEAM_VIP
-    return bool:(get_user_flags(pPlayer) & ADMIN_LEVEL_H || g_blNightMode || is_user_steam(pPlayer));
+    return bool:(get_user_flags(pPlayer) & VIP_ACCESS || g_blNightMode || is_user_steam(pPlayer));
 #else
-    return bool:(get_user_flags(pPlayer) & ADMIN_LEVEL_H || g_blNightMode);
+    return bool:(get_user_flags(pPlayer) & VIP_ACCESS || g_blNightMode);
 #endif
 }
 
