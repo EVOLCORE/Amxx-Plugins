@@ -1,0 +1,6 @@
+[en]
+AFK_PREFIX = ^4[Cortex]^1
+
+AFK_WARNS = ^3you are not active, warning:^4 %i/%i
+AFK_KICKED = ^3%n ^1was kicked from the server, the reason:^4 %s
+AFK_TRANSFERED = ^3%n ^1was transferred to spectators, the reason:^4 %s
