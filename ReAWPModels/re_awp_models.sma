@@ -65,7 +65,7 @@ public plugin_precache() {
 	g_iMenu = menu_create(fmt("\d[\r%s\d] \w|| \yAWP Skin Menu", g_szTag), "@menu_awp_handler");
 
 	for(new i = 0; i < sizeof(g_szWeaponNames); i++) {
-		if(csd_get_user_xp(pPlayer) >= g_szWeaponNames[i][mdl_value]) {
+		if(crs_get_user_xp(pPlayer) >= g_szWeaponNames[i][mdl_value]) {
 			menu_additem(g_iMenu, fmt("\w%s", g_szWeaponNames[i][mdl_name]), fmt("%i", i));
 		}
 	}
