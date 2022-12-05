@@ -11,25 +11,25 @@ enum _:szRank {
 
 /* {"RankName", Maximum XP to level up} */
 new const szRankNames[][][] = {
-	{"Unranked", 40},
-	{"Silver I", 80},
-	{"Silver II", 100},
-	{"Silver III", 140},
-	{"Silver IV", 180},
-	{"Silver Elite", 250},
-	{"Silver Elite Master", 300},
-	{"Gold Nova I", 350},
-	{"Gold Nova II", 400},
-	{"Gold Nova III", 450},
-	{"Gold Nova Master", 500},
-	{"Master Guardian I", 550},
-	{"Master Guardian II", 600},
-	{"Master Guardian Elite", 650},
-	{"Distinguished Master Guardian", 700},
-	{"Legendary Eagle", 750},
-	{"Legendary Eagle Master", 800},
-	{"Supreme Master First Class", 900},
-	{"The Global Elite", 1000}
+	{"Unranked", 400},
+	{"Silver I", 800},
+	{"Silver II", 1000},
+	{"Silver III", 1400},
+	{"Silver IV", 1800},
+	{"Silver Elite", 2500},
+	{"Silver Elite Master", 3000},
+	{"Gold Nova I", 3500},
+	{"Gold Nova II", 4000},
+	{"Gold Nova III", 4500},
+	{"Gold Nova Master", 5000},
+	{"Master Guardian I", 5500},
+	{"Master Guardian II", 6000},
+	{"Master Guardian Elite", 6500},
+	{"Distinguished Master Guardian", 7000},
+	{"Legendary Eagle", 7500},
+	{"Legendary Eagle Master", 8000},
+	{"Supreme Master First Class", 9000},
+	{"The Global Elite", 10000}
 };
 
 new bool:g_PlayerRankedUp[MAX_CLIENTS + 1],
@@ -40,39 +40,39 @@ new bool:g_PlayerRankedUp[MAX_CLIENTS + 1],
 	hud_sync;
 
 public plugin_init() {
-	register_plugin("[ReAPI] CSDM Ranks", "1.4", "mIDnight");
+	register_plugin("[ReAPI] Cortex Rank System", "0.0.4", "mIDnight");
 
 	RegisterHookChain(RG_CBasePlayer_Killed, "@CBasePlayer_Killed", .post = true);
 
-	bind_pcvar_num(create_cvar("csd_dead_xp", "-2"), pCvars[0]);
-	bind_pcvar_num(create_cvar("csd_kill_xp", "3"), pCvars[1]);
-	bind_pcvar_num(create_cvar("csd_kill_hs_xp", "2"), pCvars[2]);
+	bind_pcvar_num(create_cvar("crs_dead_xp", "-2"), pCvars[0]);
+	bind_pcvar_num(create_cvar("crs_kill_xp", "3"), pCvars[1]);
+	bind_pcvar_num(create_cvar("crs_kill_hs_xp", "2"), pCvars[2]);
 
-	pForward[0] = CreateMultiForward("csd_rank_up", ET_IGNORE, FP_CELL);
-	pForward[1] = CreateMultiForward("csd_rank_down", ET_IGNORE, FP_CELL);
+	pForward[0] = CreateMultiForward("crs_rank_up", ET_IGNORE, FP_CELL);
+	pForward[1] = CreateMultiForward("crs_rank_down", ET_IGNORE, FP_CELL);
 
 	hud_sync = CreateHudSyncObj();
 }
 
 public plugin_natives() {
-	register_native("csd_get_user_xp", "@csd_get_user_xp");
-	register_native("csd_get_user_rank", "@csd_get_user_rank");
-	register_native("csd_get_user_rankname", "@csd_get_user_rankname");
+	register_native("crs_get_user_xp", "@crs_get_user_xp");
+	register_native("crs_get_user_rank", "@crs_get_user_rank");
+	register_native("crs_get_user_rankname", "@crs_get_user_rankname");
 }
 
-@csd_get_user_xp() {
+@crs_get_user_xp() {
 	new pPlayer = get_param(1);
 
 	return g_xp[pPlayer];
 }
 
-@csd_get_user_rank() {
+@crs_get_user_rank() {
 	new pPlayer = get_param(1);
 
 	return g_rank[pPlayer];
 }
 
-@csd_get_user_rankname() {
+@crs_get_user_rankname() {
 	new pPlayer = get_param(1);
 
 	set_array(2, szRankNames[g_rank[pPlayer]][Rank_Name], get_param(3));
@@ -88,7 +88,7 @@ public client_putinserver(pPlayer) {
 
 @ShowHudmessage(const pPlayer) {
 	set_hudmessage(210, 105, 30, 0.01, 0.15, 0, _, 1.0, 0.1, 0.1);
-	ShowSyncHudMsg(pPlayer, hud_sync, "[ Name: %n ]^n[ Rank: %s ]^n[ Rank Xp: %i/%i ]", pPlayer, szRankNames[g_rank[pPlayer]][Rank_Name], g_xp[pPlayer], szRankNames[g_rank[pPlayer]][Rank_MaxXp]);
+	ShowSyncHudMsg(pPlayer, hud_sync, "[ Name: %n ]^n[ Rank: %s ]^n[ Rank XP: %i/%i ]", pPlayer, szRankNames[g_rank[pPlayer]][Rank_Name], g_xp[pPlayer], szRankNames[g_rank[pPlayer]][Rank_MaxXp]);
 }
 
 @CBasePlayer_Killed(const pVictim, pAttacker, iGib) {
@@ -107,7 +107,7 @@ public client_putinserver(pPlayer) {
 	RankCheck(pVictim);
 }
 
-const TASKID_CSD = 1337;
+const TASKID_CRS = 1337;
 
 RankCheck(const pPlayer) {
 	if(g_xp[pPlayer] >= szRankNames[g_rank[pPlayer]][Rank_MaxXp][0]) {
@@ -115,10 +115,10 @@ RankCheck(const pPlayer) {
 			g_xp[pPlayer] = szRankNames[g_rank[pPlayer]][Rank_MaxXp][0];
 			return;
 		}
-		g_xp[pPlayer] -= szRankNames[g_rank[pPlayer]][Rank_MaxXp][0];
+	//	g_xp[pPlayer] -= szRankNames[g_rank[pPlayer]][Rank_MaxXp][0];
 		g_rank[pPlayer]++;
 		g_PlayerRankedUp[pPlayer] = true;
-		remove_task(pPlayer + TASKID_CSD);
+		remove_task(pPlayer + TASKID_CRS);
 
 		ExecuteForward(pForward[0], _, pPlayer);
 	}
@@ -137,10 +137,10 @@ RankCheck(const pPlayer) {
 new g_vault;
 
 public plugin_cfg() {
-	g_vault = nvault_open("CSDMRankSystem");
+	g_vault = nvault_open("CortexRankSystem");
 
 	if(g_vault == INVALID_HANDLE) {
-		set_fail_state("Unknown nvault for CSDMRankSystem");
+		set_fail_state("Unknown nvault for CortexRankSystem");
 	}
 }
 
@@ -164,5 +164,5 @@ public client_disconnected(pPlayer) {
 	nvault_pset(g_vault, fmt("%s_rank", authid), data);
 
 	remove_task(pPlayer);
-	remove_task(pPlayer + TASKID_CSD);
+	remove_task(pPlayer + TASKID_CRS);
 }
