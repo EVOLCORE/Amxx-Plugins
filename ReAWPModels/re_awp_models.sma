@@ -1,7 +1,14 @@
 #pragma semicolon 1
 
+//#define NVAULT
+
 #include <amxmodx>
 #include <crs>
+
+#if defined NVAULT
+	#include <nvault>
+#endif	
+
 #include <reapi>
 
 #define	var_wmodel	var_targetname
@@ -30,6 +37,9 @@ new const g_szTag[] = "Element";
 
 new g_iAwp[MAX_CLIENTS + 1],
 	g_iMenu;
+#if defined NVAULT
+	new g_iVault;
+#endif
 
 public plugin_init() {
 	register_plugin("[ReAPI] AWP menu", "1.1", "mIDnight");
@@ -148,3 +158,28 @@ GetWeaponBoxWeapon(const iWeaponBox) {
 		set_entvar(iWeapon, var_wmodel, fmt("%s/w_%s.mdl", g_szWeaponFile, g_szWeaponNames[g_iAwp[pPlayer]][mdl_name]));
 	}
 }
+
+#if defined NVAULT
+public plugin_cfg() {
+	g_iVault = nvault_open("Players_AWP_Models");
+
+	if(g_iVault == INVALID_HANDLE) {
+		set_fail_state("Vault error");
+	}
+}
+
+public plugin_end() {
+	nvault_close(g_iVault);
+}
+
+public client_authorized(pPlayer, const szAuthid[]) {
+	g_iAwp[pPlayer] = nvault_get(g_iVault, szAuthid);
+}
+
+public client_disconnected(pPlayer) {
+	new szAuthid[MAX_AUTHID_LENGTH];
+	get_user_authid(pPlayer, szAuthid, charsmax(szAuthid));
+
+	nvault_pset(g_iVault, szAuthid, fmt("%i", g_iAwp[pPlayer]));
+}
+#endif
