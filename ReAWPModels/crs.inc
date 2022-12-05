@@ -8,14 +8,14 @@
  *
  * @noreturn
  */
-forward csd_rank_up(const id);
+forward crs_rank_up(const id);
 
  /**
   * Called just after client rank down
   *
   * @noreturn
   */
- forward csd_rank_down(const id);
+ forward crs_rank_down(const id);
 
  /**
  * Gets xp value from client
@@ -26,7 +26,7 @@ forward csd_rank_up(const id);
  *         the client is not connected or the index is not within the
  *         range of 1 to MaxClients
  */
-native csd_get_user_xp(const id);
+native crs_get_user_xp(const id);
 
  /**
  * Gets rank value from client
@@ -37,7 +37,7 @@ native csd_get_user_xp(const id);
  *         the client is not connected or the index is not within the
  *         range of 1 to MaxClients
  */
- native csd_get_user_rank(const id);
+ native crs_get_user_rank(const id);
 
  /**
  * Gets rank name from client
@@ -48,4 +48,4 @@ native csd_get_user_xp(const id);
  *
  * @noreturn
  */
- native csd_get_user_rankname(const id, const rankname[], const len);
+ native crs_get_user_rankname(const id, const rankname[], const len);
