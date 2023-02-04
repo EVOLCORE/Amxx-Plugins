@@ -1,0 +1,9 @@
+[en]
+WM_FILE_CANT    = Couldn't 
+WM_READ         = Read %s
+WM_FIND         = Find %s
+WM_BAD_TYPE     = Bad Type: %s
+WM_BAD_WEAPON   = Bad Weapon: %s ! Perhaps you specified it incorrectly
+WM_NONE_PARAM_FOR_TYPE  = There is no value for the type: %i | String: %s
+WM_REPLACE_ON   = ^4[HW] ^1You have ^3enabled ^1the display of ^3skins^1!
+WM_REPLACE_OFF  = ^4[HW] ^1You have ^3disabled ^1the display of ^3skins^1!
