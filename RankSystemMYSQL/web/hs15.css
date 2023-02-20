@@ -1,0 +1,105 @@
+html {
+    background-image: url('http://217.160.238.101/hwrank/img/background-hs15.jpg');
+  	background-position: relative;
+  	background-position-x:-105px;
+  	background-size: 120% 112%;
+}
+body {
+	font-family:sans-serif;
+}
+table {
+    width: 100%;
+    color: #ff4040;
+    background: rgba(6, 6, 6, 0.5);
+    box-shadow: 0px 4px 5px rgba(0,0,0,.2);
+    border-radius: 10px;
+    border-style: inset;
+    border-width: 2px;
+    border-right: 2px;
+    border-top: 2px;
+    border-radius: 5px;
+    border-color: #ff4040;
+}
+td:hover { color:white; }
+td {
+    	text-shadow: 0px 1px 3px black;
+    	text-align: center;
+    	color: #A9A9A9;
+    	height:25px;
+    	font-size:15px;
+}
+th:hover { color: white; }
+th:first-child, td:first-child {
+    	min-width: 30px;
+}
+th:last-child { width:12%;}
+td p:hover { color:#ff4040; }
+td p {
+    	color:white;
+    	font-weight: 700;
+    	min-width: 180px;
+}
+td a {
+    font-size:12px;
+    position:relative;
+    bottom:8px;
+    color: #A9A9A9;
+    text-shadow: 0 1px 3px black;
+}
+tr {
+    font-size:15px;
+}
+#a {
+   	height: 35px;
+    	background: rgba(83, 84, 95, 0.7);
+}
+#b {
+    	background: rgba(0, 0, 0, 0.3);
+}
+
+#c, #d, #f {
+    	background-repeat: no-repeat;
+    	background-position: center;
+    	background-size: contain;
+}
+
+#c, #f {
+    width:5%;
+}
+
+#c { background-image: url('http://217.160.238.101/hwrank/img/icon-star.png'); }
+#d { background-image: url('http://217.160.238.101/hwrank/img/played-time.png'); }
+#f { background-image: url('http://217.160.238.101/hwrank/img/icon-trophy.png'); }
+
+#e:hover { color:white; }
+#e {
+    margin:auto;
+    width:75px;
+    text-align:left;
+    padding-left:5px;
+	color:#d3b35a;
+	font-weight:700;
+    border-style: inset;
+    border-width: 2px;
+    border-radius: 5px;
+    border-color: #d3b35a;
+    background: rgba(6, 6, 6, 0.5);
+}
+#e a { 
+    bottom:0px;
+    font-size:15px;
+    font-weight:100;
+    float:right;
+    padding-right:5px;
+    color:#a9a9a9;
+}
+
+#z, #w, #y {
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+}
+#z { background-image: url('http://217.160.238.101/hwrank/img/icon-first.png'); }
+#w { background-image: url('http://217.160.238.101/hwrank/img/icon-second.png'); }
+#y { background-image: url('http://217.160.238.101/hwrank/img/icon-third.png'); }
+    

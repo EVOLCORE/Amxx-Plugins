@@ -1,0 +1,231 @@
+html {
+    background-image: url('http://217.160.238.101/hwrank/img/background-mapend.jpg');
+  	background-position: relative;
+  	background-size: 100% 100%;
+}
+body {
+	font-family:sans-serif;
+}
+table {
+    color: white;
+    box-shadow: 0 4px 5px rgba(0,0,0,.0);
+}
+td {
+    	color: #A9A9A9;
+    	font-size:15px;
+    	text-shadow: 0 1px 3px black;
+}
+table th { background: rgba(6, 6, 6, .7);}
+#t1 td:hover { color:white; }
+#t1 td {
+    	color: #A9A9A9;
+    	font-size:15px;
+    	height:30px;
+    	padding-right: 10px;
+}
+#s p:hover { color:white; }
+#s p { 
+    display:inline;
+    font-size:12px;
+    position:relative;
+    bottom:8px;
+    right:5px;
+    color: #A9A9A9;
+    text-shadow: 0 1px 3px black;
+}
+#b{
+    	background: rgba(6, 6, 6, .3);
+}
+#t1 th:hover { color:white; }
+#t1 th { 
+    color:yellow;
+    text-shadow: 1px 0 5px rgba(0,0,0,.9);
+    height:35px;
+    font-size:17px;
+    padding-right: 10px;
+}
+tr { text-align:center; }
+th:first-child, td:first-child { width: 3%; text-align:right;}
+td:last-child { width: 8%; }
+td:nth-child(3) {  width:65%; }
+td:nth-child(5) {  padding-left: 5px; }
+th {
+	color:white;
+	font-size:15px;
+}
+td p:hover { color:yellow; }
+td p {
+    	color:white;
+    	font-weight: 700;
+        text-align:left;
+}
+#hr1 {
+    border: 2px solid white;
+    border-style:inset;
+    border-radius:5px;
+    max-width:30%;
+}
+#hr2 { 
+	border: 2px solid #c0c0c0;
+    border-radius:5px;
+    border-style:inset;
+    width:100%;
+}
+#t1 {
+  margin-left:auto; 
+  margin-right:auto;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  width: 75%;
+  position:center;
+  background: rgba(6, 6, 6, .5);
+  box-shadow: 0 5px 5px rgba(0,0,0,.2);
+    border-style: inset;
+    border-width: 1px;
+    border-right: 1px;
+    border-top: 1px;
+    border-radius: 5px;
+    border-color: yellow;
+    border-spacing:0;
+}
+#th1 {
+	font-size:20px;
+    max-width: 100%;
+    text-shadow: 1px 0 5px rgba(0,0,0,.4);
+    text-align:center;
+}
+#th2 {
+  font-size:17px;
+  text-align:left;
+  text-shadow: 1px 0 5px rgba(0,0,0,.4);
+}
+#th3:hover { color:white; }
+#th3 {
+	display: inline;
+    color:yellow;
+    text-shadow: 1px 0 5px rgba(0,0,0,.4);
+    margin-left:10px;
+}
+#th5:hover, #th6:hover, #th7:hover { color:white; }
+#th5, #th6, #th7 {
+	text-align:center;
+    font-size:25px;
+    text-shadow: 1px 0 5px rgba(0,0,0,.4);
+    box-shadow: 0 4px 5px rgba(0,0,0,.5);
+}
+#th5 { color:#ff4040;}
+#th6 { color:#00bfff;}
+#th7 { color:#f5f5f5;}
+#t2 th{background: rgba(6, 6, 6, .0)}
+#t2 {
+  margin-left:auto; 
+  margin-right:auto;
+  box-shadow: 0 4px 5px rgba(0,0,0,.0);
+  width: 75%;
+}
+#t4 th {background: rgba(6, 6, 6, .0)}
+#t4 {
+  margin-left:auto; 
+  margin-right:auto;
+  width: 100%;
+  background: rgba(6, 6, 6, .5);
+  text-shadow: 1px 0 5px rgba(0,0,0,.4);
+}
+#t3 th {background: rgba(6, 6, 6, .0);}
+#t3 {
+  margin-left:auto; 
+  margin-right:auto;
+  margin-top: 20px;
+  width: 50%;
+  text-shadow: 1px 0 5px rgba(0,0,0,.4);
+  background: -webkit-linear-gradient(left, transparent, rgba(0,0,0,.5), transparent);
+}
+#td2:hover { color:white; }
+#td2 {
+    padding-left:120px;
+    height:1px;
+	text-align:left;
+    font-size:14px;
+    font-weight:700;
+    background: rgba(6, 6, 6, .0);
+}
+#td3 {
+	display: inline;
+	padding-right:120px;
+    float:right;
+    font-size:16px;
+    font-weight:800;
+    color:yellow;
+}
+#th4:hover { color:white; }
+#th4 {
+    color:#dcdcdc;
+    padding-left:120px;
+    font-size:25px;
+    padding-bottom:10px;
+    text-align:left;
+    text-shadow: 1px 0 5px rgba(0,0,0,.4);
+    white-space:nowrap;
+    overflow:hidden;
+}
+td img { max-width:25px;}
+
+#s:hover { color:white; }
+#s { text-shadow: 0 1px 3px black;}
+#s p { padding-left:5px;}
+
+#r1, #r2, #r3, #r4, #r5, #r6, #r7, #r8, #r9, #r10, #r11, #r12, #r13, #r14, #r15, #r16, #r17, #r18, #r19  {
+    	background-repeat: no-repeat;
+    	background-position: center;
+    	background-size: 100%;
+}
+
+#r1 { background-image: url('http://217.160.238.101/hwrank/img/ranks/rank0.png'); }
+#r2 { background-image: url('http://217.160.238.101/hwrank/img/ranks/rank1.png'); }
+#r3 { background-image: url('http://217.160.238.101/hwrank/img/ranks/rank2.png'); }
+#r4 { background-image: url('http://217.160.238.101/hwrank/img/ranks/rank3.png'); }
+#r5 { background-image: url('http://217.160.238.101/hwrank/img/ranks/rank4.png'); }
+#r6 { background-image: url('http://217.160.238.101/hwrank/img/ranks/rank5.png'); }
+#r7 { background-image: url('http://217.160.238.101/hwrank/img/ranks/rank6.png'); }
+#r8 { background-image: url('http://217.160.238.101/hwrank/img/ranks/rank7.png'); }
+#r9 { background-image: url('http://217.160.238.101/hwrank/img/ranks/rank8.png'); }
+#r10 { background-image: url('http://217.160.238.101/hwrank/img/ranks/rank9.png'); }
+#r11 { background-image: url('http://217.160.238.101/hwrank/img/ranks/rank10.png'); }
+#r12 { background-image: url('http://217.160.238.101/hwrank/img/ranks/rank11.png'); }
+#r13 { background-image: url('http://217.160.238.101/hwrank/img/ranks/rank12.png'); }
+#r14 { background-image: url('http://217.160.238.101/hwrank/img/ranks/rank13.png'); }
+#r15 { background-image: url('http://217.160.238.101/hwrank/img/ranks/rank14.png'); }
+#r16 { background-image: url('http://217.160.238.101/hwrank/img/ranks/rank15.png'); }
+#r17 { background-image: url('http://217.160.238.101/hwrank/img/ranks/rank16.png'); }
+#r18 { background-image: url('http://217.160.238.101/hwrank/img/ranks/rank17.png'); }
+#r19 { background-image: url('http://217.160.238.101/hwrank/img/ranks/rank18.png'); }
+
+#z, #w, #y {
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 100%;
+}
+#z { background-image: url('http://217.160.238.101/hwrank/img/icon-first.png'); }
+#w { background-image: url('http://217.160.238.101/hwrank/img/icon-second.png'); }
+#y { background-image: url('http://217.160.238.101/hwrank/img/icon-third.png'); }
+
+#k, #d, #m {
+    background-repeat: no-repeat;
+    background-position-y: center;
+    background-size: contain;
+    box-shadow: 0px 4px 5px rgba(0,0,0,0 .9);
+    width:4%;
+}
+#k { 
+    background-image: url('http://217.160.238.101/hwrank/img/icon-kills.png'); 
+    background-size:220%;
+    background-position: center;
+}
+#d { 
+    background-image: url('http://217.160.238.101/hwrank/img/icon-skull.png'); 
+    background-size:90%;
+}
+#m { 
+    background-image: url('http://217.160.238.101/hwrank/img/icon-star.png'); 
+    background-size:70%;
+}
