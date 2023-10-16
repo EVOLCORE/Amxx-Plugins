@@ -4,22 +4,28 @@
 #include <reapi>
 
 /* YOU CAN UNDEFINE WHATEVER YOU WANT */
-#define VIP_ACCESS ADMIN_LEVEL_H    // VIP ACCESS
+#define VIP_ACCESS      ADMIN_LEVEL_H    // VIP ACCESS
 #define DAMAGER                     // DAMAGE THINGS
-//#define VIP_MODEL                   // VIP MODELS
-//#define STEAM_VIP		            // STEAM WILL BE VIP EVERYTIME IF DEFINE IS ON
+//#define VIP_MODEL                 // VIP MODELS
+#define STEAM_VIP		            // VIP will be free for STEAM players if define is on
 #define BONUS_HS        10.0        // The amount of added HP per kill in the head (set to 0.0 if you don't need to add, since you can't comment out)
 #define BONUS_NORMAL    0.0         // The number of added HP per kill (set to 0.0 if you do not need to add, since you cannot comment out)
 #define MAX_HP          100.0       // Max HP
-#define BLOCK_MAPS	"awp_", "aim_", "fy_", "35hp", "$"
+#define BLOCK_MAPS	    "awp_", "aim_", "fy_", "35hp", "$"
+
+#if defined STEAM_VIP
+    #define rvs_is_user_vip_no_text(%1) (get_user_flags(%1) & VIP_ACCESS || g_blNightMode || is_user_steam(%1))
+#else
+    #define rvs_is_user_vip_no_text(%1) (get_user_flags(%1) & VIP_ACCESS || g_blNightMode)
+#endif
 
 new const g_szTag[] = "HW";         // Chat tag(prefix)
 
 /* Vip Models */
 #if defined VIP_MODEL
 new const g_szModelNames[][] = {
-	"winter_vip_t",   // te model
-	"winter_vip_ct"    // ct model
+	"vip_t",   // te model
+	"vip_ct"    // ct model
 };
 #endif
 
@@ -34,20 +40,14 @@ enum {
 }
 
 new g_iHudSyncObj, g_iSwitchDmg[MAX_CLIENTS + 1], bool:g_blNightMode,
-g_iPistol[MAX_CLIENTS + 1], bool:g_blWeapon[MAX_CLIENTS + 1], g_iRound, mp_buytime,
-g_blBuyzone;
+g_iPistol[MAX_CLIENTS + 1], bool:g_blWeapon[MAX_CLIENTS + 1], g_iRound, Float:g_flBuyTime;
 
 new HookChain:g_iHC_Spawn_Post;
 
 native native_Access_GetAccessInfo(id, sPassword[] = "", sAccess[] = "", sDateEnd[] = "", sFullName[] = "", sContacts[] = "");
 
 public plugin_init() {
-    register_plugin("[ReAPI] VIP system", "1.8", "mIDnight");
-
-    #if defined DAMAGER
-        register_clcmd("say /damager", "@clcmd_damager");
-        register_clcmd("say_team /damager", "@clcmd_damager");
-    #endif
+    register_plugin("[ReAPI] VIP system", "0.0.7", "mIDnight");
 
     register_clcmd("say /vipmenu", "@clcmd_vipmenu");
     register_clcmd("say_team /vipmenu", "@clcmd_vipmenu");
@@ -70,11 +70,9 @@ public plugin_init() {
         RegisterHookChain(RG_CBasePlayer_SetClientUserInfoModel, "@CBasePlayer_SetClientUserInfoModel_Pre", .post = false);
     #endif
 
-    if(!get_member_game(m_bMapHasVIPSafetyZone)) {
+    if (!get_member_game(m_bMapHasVIPSafetyZone)) {
         register_message(get_user_msgid("ScoreAttrib"), "@message_ScoreAttrib");
     }
-
-    mp_buytime = get_cvar_pointer("mp_buytime");
 }
 
 #if defined VIP_MODEL
@@ -86,12 +84,14 @@ public plugin_precache() {
 #endif
 
 public plugin_cfg() {
-	new map[32]; rh_get_mapname(map, charsmax(map));
-	new BlockMap[][] = { BLOCK_MAPS };
-	for(new i; i < sizeof BlockMap; i++)
-	if(containi(map, BlockMap[i]) != -1) {
-		DisableHookChain(g_iHC_Spawn_Post);
-	}
+    new map[32]; rh_get_mapname(map, charsmax(map));
+    new BlockMap[][] = { BLOCK_MAPS };
+    for(new i; i < sizeof BlockMap; i++)
+    if(containi(map, BlockMap[i]) != -1) {
+        DisableHookChain(g_iHC_Spawn_Post);
+    }
+
+    bind_pcvar_float(get_cvar_pointer("mp_buytime"), g_flBuyTime);
 }
 
 #if defined DAMAGER
@@ -107,76 +107,56 @@ public OnConfigsExecuted() {
 }
 
 @clcmd_vipmenu(const pPlayer) {
-	if(!rvs_is_user_vip(pPlayer)) {
-		return PLUGIN_HANDLED;
-	}
+    if (!rvs_is_user_vip(pPlayer)) {
+        return PLUGIN_HANDLED;
+    }
 
-	new iExp = NULLENT, sDateEnd[ 128 ];
-	if(native_Access_GetAccessInfo(pPlayer, .sDateEnd = sDateEnd)) {
-		if(!equal(sDateEnd, "lifetime")) {
-			formatex(sDateEnd, charsmax(sDateEnd), "%s 00:00:00", sDateEnd );
-			iExp = parse_time(sDateEnd, "%d:%m:%Y %H:%M:%S") + 86400;
-		}
-	}
+    new iExp = 0, sDateEnd[128];
+    if (native_Access_GetAccessInfo(pPlayer, .sDateEnd = sDateEnd)) {
+        if (!equal(sDateEnd, "lifetime")) {
+            formatex(sDateEnd, charsmax(sDateEnd), "%s 00:00:00", sDateEnd);
+            iExp = parse_time(sDateEnd, "%d:%m:%Y %H:%M:%S") + 86400;
+        }
+    }
 
-	new iMenu;
+    new iMenu, iDays;
+    if (iExp > 0) {
+        iExp = max(iExp - get_systime(), 0);
+        iDays = iExp / 86400;
 
-	if(iExp > 0) {
-		iExp -= get_systime();
+        iMenu = menu_create(fmt("\y|\rHyperWorld\y| VIP Menu: \r[%d %s\r]", iDays, (iDays > 1) ? "\wdays" : "\wday"), "@clcmd_vipmenu_handler");
+    }
+    else if (iExp == 0) {
+        iMenu = menu_create(fmt("\y\y|\rHyperWorld\y| VIP Menu: \r[%s\r]", g_blNightMode ? "\wFree 22-10 hour" : (is_user_steam(pPlayer) ? "\wSteam" : "\wLifetime")), "@clcmd_vipmenu_handler");
+    }
 
-		new iDays, iHours, iMinutes;
-		seconds_to_time(iExp, iDays, iHours, iMinutes);
+    menu_additem(iMenu, "\yTake \wAK47");
+    menu_additem(iMenu, "\yTake \wM4A1^n");
+    menu_additem(iMenu, fmt("\yPistol on spawn \y[\r%s\y]", g_iPistol[pPlayer] == 0 ? "Deagle" : g_iPistol[pPlayer] == 1 ? "USP" : "Glock"));
 
-		if(iDays > 0) {
-			iMenu = menu_create(fmt("\y|\rHyperWorld\y| VIP Menu: \r[\y%d day.\r]", iDays ), "@clcmd_vipmenu_handler");
-		}
-		else {
-			iMenu = menu_create(fmt("\y|\rHyperWorld\y| VIP Menu: \r[\y%dh. %dmin.\r]", iHours, iMinutes ), "@clcmd_vipmenu_handler");
-		}
-	}
-	else if(iExp == 0) {
-		iMenu = menu_create("\y\y|\rHyperWorld\y| VIP Menu: \r[\ylifetime\r]", "@clcmd_vipmenu_handler");
-	}
-	else {
-#if defined STEAM_VIP
-		iMenu = menu_create(fmt("\y\y|\rHyperWorld\y| FREE VIP Menu: %s", is_user_steam(pPlayer) ? "\w(\rSteam\w)" : "\w(\r22\w-\r10\w)"), "@clcmd_vipmenu_handler");
-#else
-		iMenu = menu_create("\y\y|\rHyperWorld\y| FREE VIP Menu: \w(\r22\w-\r10\w)", "@clcmd_vipmenu_handler");
-#endif
-	}
+    #if defined DAMAGER
+    menu_additem(iMenu, fmt("\yDamager \y[\r%s\y]", g_iSwitchDmg[pPlayer] ? "Enabled" : "Disabled"));
+    #endif
 
-	menu_additem(iMenu, "\yTake \wAK47");
-	menu_additem(iMenu, "\yTake \wM4A1^n");
-
-	menu_additem(iMenu, fmt("\yPistol on spawn \r[\w%s\r]", g_iPistol[pPlayer] == 0 ? "Deagle" : g_iPistol[pPlayer] == 1 ? "USP" : "Glock"));
-
-	#if defined DAMAGER
-	menu_additem(iMenu, fmt("\yDamager \r[\w%s\r]", g_iSwitchDmg[pPlayer] ? "Enabled" : "Disabled"));
-	#endif
-
-	menu_display(pPlayer, iMenu);
-	return PLUGIN_HANDLED;
+    menu_display(pPlayer, iMenu);
+    return PLUGIN_HANDLED;
 }
 
 @clcmd_vipmenu_handler(const pPlayer, const iMenu, const iItem) {
-    if(!rvs_is_user_vip(pPlayer) || !is_user_alive(pPlayer)) {
+    if (!rvs_is_user_vip(pPlayer) || !is_user_alive(pPlayer)) {
         menu_destroy(iMenu);
         return PLUGIN_HANDLED;
     }
 
-    switch(iItem) {
-        case 0: {
-            rg_give_item(pPlayer, "weapon_ak47", GT_REPLACE);
-            rg_set_user_bpammo(pPlayer, WEAPON_AK47, 90);
-            g_blWeapon[pPlayer] = true;
-        }
-        case 1: {
-            rg_give_item(pPlayer, "weapon_m4a1", GT_REPLACE);
-            rg_set_user_bpammo(pPlayer, WEAPON_M4A1, 90);
-            g_blWeapon[pPlayer] = true;
+    switch (iItem) {
+        case 0, 1: {
+            new weaponName[32];
+            formatex(weaponName, sizeof(weaponName), "weapon_%s", (iItem == 0) ? "ak47" : "m4a1");
+            UTIL_give_item(pPlayer, weaponName, GT_REPLACE, 90);
+            g_blWeapon[pPlayer] = true;   
         }
         case 2: {
-            g_iPistol[pPlayer] >= 2 ? (g_iPistol[pPlayer] = 0) : g_iPistol[pPlayer]++;
+            g_iPistol[pPlayer] = (g_iPistol[pPlayer] + 1) % 3;
             @clcmd_vipmenu(pPlayer);
         }
 
@@ -191,54 +171,30 @@ public OnConfigsExecuted() {
     return PLUGIN_HANDLED;
 }
 
-#if defined DAMAGER
-@clcmd_damager(const pPlayer) {
-    if(!rvs_is_user_vip(pPlayer)) {
-        return PLUGIN_HANDLED;
-    }
-
-    g_iSwitchDmg[pPlayer] = !g_iSwitchDmg[pPlayer];
-    client_print_color(pPlayer, pPlayer, "^4[%s] ^1You ^4%s ^1damager for yourself", g_szTag, g_iSwitchDmg[pPlayer] ? "Enabled" : "Disabled");
-    return PLUGIN_HANDLED;
-}
-#endif
-
 @clcmd_wantvip(const pPlayer) {
-    show_motd(pPlayer, "/addons/amxmodx/configs/want_vip.html");
+    show_motd(pPlayer, "http://23.26.247.185/vip/want_vip.html");
     return PLUGIN_HANDLED;
 }
 
 @CSGameRules_RestartRound_Pre() {
-	if(get_member_game(m_bCompleteReset)) {
-		g_iRound = 0;
-	}
-	g_iRound++;
-	g_blBuyzone = false;
-	arrayset(g_blWeapon, false, sizeof g_blWeapon);
+    g_iRound = get_member_game(m_bCompleteReset) ? 0 : (g_iRound + 1);
+    arrayset(g_blWeapon, false, sizeof g_blWeapon);
 }
 
 @CSGameRules_RestartRound_Post() {
     if(g_iRound < VIPROUND) {
         return;
     }
-
-    remove_task(1337);
-    set_task(get_pcvar_float(mp_buytime) * 60.0, "@OffBuyzone", 1337);
-}
-
-@OffBuyzone() {
-    g_blBuyzone = true;
-    show_menu(0, 0, "");
 }
 
 @CBasePlayer_Spawn_Post(const pPlayer) {
-    if(!rvs_is_user_vip_no_text(pPlayer) || get_member(pPlayer, m_bJustConnected) || !is_user_alive(pPlayer)) {
+    if (!rvs_is_user_vip_no_text(pPlayer) || get_member(pPlayer, m_bJustConnected) || !is_user_alive(pPlayer)) {
         return;
     }
 
     if(g_iRound >= ROUND_NADES) {
-        rg_give_item(pPlayer, "weapon_hegrenade", GT_APPEND);
-        rg_give_item(pPlayer, "weapon_flashbang", GT_APPEND);
+        UTIL_give_item(pPlayer, "weapon_hegrenade", GT_APPEND, 0);
+        UTIL_give_item(pPlayer, "weapon_flashbang", GT_APPEND, 0);
     }
     if(g_iRound >= ROUND_ARMOR) {
         rg_set_user_armor(pPlayer, 100, ARMOR_VESTHELM);
@@ -247,10 +203,10 @@ public OnConfigsExecuted() {
         rg_give_defusekit(pPlayer, true);
     }
 
-    switch(g_iPistol[pPlayer]) {
-        case 0: { rg_give_item(pPlayer, "weapon_deagle", GT_REPLACE); rg_set_user_bpammo(pPlayer, WEAPON_DEAGLE, 35); }
-        case 1: { rg_give_item(pPlayer, "weapon_usp", GT_REPLACE); rg_set_user_bpammo(pPlayer, WEAPON_USP, 100); }
-        case 2: { rg_give_item(pPlayer, "weapon_glock18", GT_REPLACE); rg_set_user_bpammo(pPlayer, WEAPON_GLOCK18, 120); }
+    switch (g_iPistol[pPlayer]) {
+        case 0: UTIL_give_item(pPlayer, "weapon_deagle", GT_REPLACE, 35);
+        case 1: UTIL_give_item(pPlayer, "weapon_usp", GT_REPLACE, 100);
+        case 2: UTIL_give_item(pPlayer, "weapon_glock18", GT_REPLACE, 120);
     }
 
     if(g_iRound >= VIPROUND) {
@@ -259,36 +215,28 @@ public OnConfigsExecuted() {
 }
 
 @CBasePlayer_Killed_Post(const pVictim, pAttacker) {
-	if(!is_user_alive(pAttacker) || !rvs_is_user_vip_no_text(pAttacker) || pVictim == pAttacker) {
-		return;
-	}
+    if(!is_user_alive(pAttacker) || !rvs_is_user_vip_no_text(pAttacker) || pVictim == pAttacker) {
+        return;
+    }
 
-	new Float:bonus = get_member(pVictim, m_bHeadshotKilled) ? BONUS_HS : BONUS_NORMAL;
-	set_entvar(pAttacker, var_health, floatmin(Float:get_entvar(pAttacker, var_health) + bonus, MAX_HP));
+    set_entvar(pAttacker, var_health, floatmin(Float:get_entvar(pAttacker, var_health) + (get_member(pVictim, m_bHeadshotKilled) ? BONUS_HS : BONUS_NORMAL), MAX_HP));
 }
 
 #if defined DAMAGER
 @CBasePlayer_TakeDamage_Post(const pVictim, iInflictor, pAttacker, Float:flDamage, bitDamageType) {
-    if(!is_user_connected(pAttacker) || !g_iSwitchDmg[pAttacker]) {
-        return;
-    }
-    if(pAttacker == pVictim || !rg_is_player_can_takedamage(pVictim, pAttacker)) {
+    if (!is_user_connected(pAttacker) || !g_iSwitchDmg[pAttacker] || pAttacker == pVictim || !rg_is_player_can_takedamage(pVictim, pAttacker)) {
         return;
     }
 
     static iDamageCoordPos[MAX_CLIENTS + 1];
     static const Float: iDamageCoords[][] = { {0.50, 0.43}, {0.55, 0.45}, {0.57, 0.50}, {0.55, 0.55}, {0.50, 0.57}, {0.45, 0.55}, {0.43, 0.50}, {0.45, 0.45} };
 
-    if(rvs_is_user_vip_no_text(pAttacker)) {
+    if (rvs_is_user_vip_no_text(pAttacker)) {
         set_hudmessage(64, 64, 0, iDamageCoords[iDamageCoordPos[pAttacker]][0], iDamageCoords[iDamageCoordPos[pAttacker]][1], _, _, 1.0); //0, 144, 200
         ShowSyncHudMsg(pAttacker, g_iHudSyncObj, "%.0f", flDamage);
     }
 
-    iDamageCoordPos[pAttacker]++;
-
-    if(iDamageCoordPos[pAttacker] == sizeof(iDamageCoords)) {
-        iDamageCoordPos[pAttacker] = 0;
-    }
+    iDamageCoordPos[pAttacker] = (iDamageCoordPos[pAttacker] + 1) % sizeof(iDamageCoords);
 }
 #endif
 
@@ -309,50 +257,41 @@ public OnConfigsExecuted() {
 }
 
 bool:rvs_is_user_vip(const pPlayer) {
-#if defined STEAM_VIP
-    if(~get_user_flags(pPlayer) & ADMIN_LEVEL_H && !g_blNightMode && !is_user_steam(pPlayer)) {
+    if (!rvs_is_user_vip_no_text(pPlayer)) {
         client_print_color(pPlayer, pPlayer, "^4[%s] ^1You are not authorized to use this menu.", g_szTag);
         return false;
     }
-#else
-    if(~get_user_flags(pPlayer) & ADMIN_LEVEL_H && !g_blNightMode) {  //Vip Access
-        client_print_color(pPlayer, pPlayer, "^4[%s] ^1You are not authorized to use this menu.", g_szTag);
-        return false;
-    }
-#endif
 
-    if(!is_user_alive(pPlayer)) {
+    if (!is_user_alive(pPlayer)) {
         client_print_color(pPlayer, pPlayer, "^4[%s] ^1You must be alive to use this menu.", g_szTag);
         return false;
     }
-    if(!g_iRound) {
+
+    if (!g_iRound) {
         client_print_color(pPlayer, pPlayer, "^4[%s] ^1Warm-up round. It is forbidden to use this menu.", g_szTag);
         return false;
     }
-    if(g_blWeapon[pPlayer]) {
+
+    if (g_blWeapon[pPlayer]) {
         client_print_color(pPlayer, pPlayer, "^4[%s] ^1You have already picked up a weapon in this round.", g_szTag);
         return false;
     }
-    if(g_iRound < VIPROUND) {
-        client_print_color(pPlayer, pPlayer, "^4[%s] ^1VIP Weapons are avaiable after ^4%i ^1rounds.", g_szTag, VIPROUND);
+
+    if (g_iRound < VIPROUND) {
+        client_print_color(pPlayer, pPlayer, "^4[%s] ^1VIP Weapons are available after ^4%i ^1rounds.", g_szTag, VIPROUND);
         return false;
     }
-    if(g_blBuyzone) {
-        client_print_color(pPlayer, pPlayer, "^4[%s] ^1You cannot use this menu after buyzone expired", g_szTag);
+
+    if(g_flBuyTime == 0.0 || (get_gametime() - Float:get_member_game(m_fRoundStartTime) > (g_flBuyTime * 60))) {
+        client_print(pPlayer, print_center, "%0.0f seconds have elapsed.^rYou can't use VIP menu!", g_flBuyTime * 60);
+        return false;                                         
     }
     return true;
 }
 
-bool:rvs_is_user_vip_no_text(const pPlayer) {
-#if defined STEAM_VIP
-    return bool:(get_user_flags(pPlayer) & VIP_ACCESS || g_blNightMode || is_user_steam(pPlayer));
-#else
-    return bool:(get_user_flags(pPlayer) & VIP_ACCESS || g_blNightMode);
-#endif
-}
+stock UTIL_give_item(const iIndex, const iWeapon[], GiveType:GtState, iAmmount) {
+    rg_give_item(iIndex, iWeapon, GtState);
 
-stock seconds_to_time(iSec, &iDays, &iHours, &iMinutes) {
-    iDays = iSec / 60 / 60 / 24;
-    iHours = (iSec / 60 / 60) % 24;
-    iMinutes = (iSec / 60) % 60;
+    if(iAmmount)
+        rg_set_user_bpammo(iIndex, rg_get_weapon_info(iWeapon, WI_ID), iAmmount);
 }
