@@ -4,7 +4,7 @@
 new szMapname[32], g_iRound, nextmap[32], maxrounds;
 
 public plugin_init() {
-    register_plugin("[ReAPI] Round info", "1.1", "mIDnight");
+    register_plugin("[ReAPI] Round info", "1.2", "mIDnight");
 
     RegisterHookChain(RG_CSGameRules_RestartRound, "@CSGameRules_RestartRound_Pre", .post = false);
     RegisterHookChain(RG_CSGameRules_OnRoundFreezeEnd,"@CSGameRules_OnRoundFreezeEnd", .post = true);
@@ -16,15 +16,12 @@ public plugin_init() {
 }
 
 @CSGameRules_RestartRound_Pre() {
-    if(get_member_game(m_bCompleteReset)) {
-        g_iRound = 0;
-    }
-    g_iRound++;
+    g_iRound = get_member_game(m_bCompleteReset) ? 0 : g_iRound + 1;
 }
 
 @CSGameRules_OnRoundFreezeEnd() {
-    new message[192];
-    format(message, sizeof(message), "^4[HW] [^1Round: ^3%d^1/^3%d ^1| Map: ^3%s ^1| ^1Nextmap: ^3%s ^1| ^1Players: ^3%i^1/^3%i^4]", g_iRound, maxrounds, szMapname, nextmap, get_playersnum(), get_member_game(m_nMaxPlayers));
+    new message[191];
+    format(message, sizeof(message), "^4[Respect Gaming 2] [^1Round: ^3%d^1/^3%d ^1| Map: ^3%s ^1| ^1Nextmap: ^3%s ^1| ^1Players: ^3%i^1/^3%i^4]", g_iRound, maxrounds, szMapname, nextmap, get_playersnum(), get_member_game(m_nMaxPlayers));
 
     client_print_color(0, print_team_grey, message);
 }
