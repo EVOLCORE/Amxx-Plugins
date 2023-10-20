@@ -8,10 +8,18 @@
 #define DAMAGER                     // DAMAGE THINGS
 //#define VIP_MODEL                 // VIP MODELS
 #define STEAM_VIP		            // VIP will be free for STEAM players if define is on
-#define BONUS_HS        10.0        // The amount of added HP per kill in the head (set to 0.0 if you don't need to add, since you can't comment out)
-#define BONUS_NORMAL    0.0         // The number of added HP per kill (set to 0.0 if you do not need to add, since you cannot comment out)
-#define MAX_HP          100.0       // Max HP
-#define BLOCK_MAPS	    "awp_", "aim_", "fy_", "35hp", "$"
+#define VAMPIRE                     // GIVE HEALTH PER KILL
+#define MAPS_BLOCK                  // MAPS TO BLOCK VIP WORK
+
+#if defined VAMPIRE
+    #define BONUS_HS        10.0        // The amount of added HP per kill in the head (set to 0.0 if you don't need to add, since you can't comment out)
+    #define BONUS_NORMAL    0.0         // The number of added HP per kill (set to 0.0 if you do not need to add, since you cannot comment out)
+    #define MAX_HP          100.0       // Max HP
+#endif
+
+#if defined MAPS_BLOCK
+    #define BLOCK_MAPS	    "awp_", "aim_", "fy_", "35hp", "$"
+#endif    
 
 #if defined STEAM_VIP
     #define rvs_is_user_vip_no_text(%1) (get_user_flags(%1) & VIP_ACCESS || g_blNightMode || is_user_steam(%1))
@@ -42,7 +50,9 @@ enum {
 new g_iHudSyncObj, g_iSwitchDmg[MAX_CLIENTS + 1], bool:g_blNightMode,
 g_iPistol[MAX_CLIENTS + 1], bool:g_blWeapon[MAX_CLIENTS + 1], g_iRound, Float:g_flBuyTime;
 
-new HookChain:g_iHC_Spawn_Post;
+#if defined MAPS_BLOCK
+    new HookChain:g_iHC_Spawn_Post;
+#endif    
 
 native native_Access_GetAccessInfo(id, sPassword[] = "", sAccess[] = "", sDateEnd[] = "", sFullName[] = "", sContacts[] = "");
 
@@ -57,9 +67,17 @@ public plugin_init() {
 
     RegisterHookChain(RG_CSGameRules_RestartRound, "@CSGameRules_RestartRound_Pre", .post = false);
     RegisterHookChain(RG_CSGameRules_RestartRound, "@CSGameRules_RestartRound_Post", .post = true);
-    g_iHC_Spawn_Post = RegisterHookChain(RG_CBasePlayer_Spawn, "@CBasePlayer_Spawn_Post", .post = true);
-    EnableHookChain(g_iHC_Spawn_Post);
-    RegisterHookChain(RG_CBasePlayer_Killed, "@CBasePlayer_Killed_Post", .post = true);
+
+    #if defined MAPS_BLOCK
+        g_iHC_Spawn_Post = RegisterHookChain(RG_CBasePlayer_Spawn, "@CBasePlayer_Spawn_Post", .post = true);
+        EnableHookChain(g_iHC_Spawn_Post);
+    #else
+        RegisterHookChain(RG_CBasePlayer_Spawn, "@CBasePlayer_Spawn_Post", .post = true);
+    #endif
+
+    #if defined VAMPIRE
+        RegisterHookChain(RG_CBasePlayer_Killed, "@CBasePlayer_Killed_Post", .post = true);
+    #endif    
 
     #if defined DAMAGER
         RegisterHookChain(RG_CBasePlayer_TakeDamage, "@CBasePlayer_TakeDamage_Post", .post = true);
@@ -84,12 +102,14 @@ public plugin_precache() {
 #endif
 
 public plugin_cfg() {
+#if defined MAPS_BLOCK    
     new map[32]; rh_get_mapname(map, charsmax(map));
     new BlockMap[][] = { BLOCK_MAPS };
     for(new i; i < sizeof BlockMap; i++)
     if(containi(map, BlockMap[i]) != -1) {
         DisableHookChain(g_iHC_Spawn_Post);
     }
+#endif 
 
     bind_pcvar_float(get_cvar_pointer("mp_buytime"), g_flBuyTime);
 }
@@ -150,9 +170,9 @@ public OnConfigsExecuted() {
 
     switch (iItem) {
         case 0, 1: {
-            new weaponName[32];
-            formatex(weaponName, sizeof(weaponName), "weapon_%s", (iItem == 0) ? "ak47" : "m4a1");
-            UTIL_give_item(pPlayer, weaponName, GT_REPLACE, 90);
+            new szWeaponName[32];
+            formatex(szWeaponName, sizeof(szWeaponName), "weapon_%s", (iItem == 0) ? "ak47" : "m4a1");
+            UTIL_give_item(pPlayer, szWeaponName, GT_REPLACE, 90);
             g_blWeapon[pPlayer] = true;   
         }
         case 2: {
@@ -214,6 +234,7 @@ public OnConfigsExecuted() {
     }
 }
 
+#if defined VAMPIRE
 @CBasePlayer_Killed_Post(const pVictim, pAttacker) {
     if(!is_user_alive(pAttacker) || !rvs_is_user_vip_no_text(pAttacker) || pVictim == pAttacker) {
         return;
@@ -221,6 +242,7 @@ public OnConfigsExecuted() {
 
     set_entvar(pAttacker, var_health, floatmin(Float:get_entvar(pAttacker, var_health) + (get_member(pVictim, m_bHeadshotKilled) ? BONUS_HS : BONUS_NORMAL), MAX_HP));
 }
+#endif
 
 #if defined DAMAGER
 @CBasePlayer_TakeDamage_Post(const pVictim, iInflictor, pAttacker, Float:flDamage, bitDamageType) {
