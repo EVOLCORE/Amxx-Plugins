@@ -1,9 +1,0 @@
-[en]
-GAG_MSG = Gagged for using forbidden words.
-GAG_WORD = Player &x04[&x03%s&x04] &x01forbidden word used.
-GAG_GAGGED = For using forbidden words gagged on&x04 120 &x01seconds.
-GAG_EXPIRED = Gag expired you can talk now.
-NNC_MESSAGE = You are not allowed to change your name.
-NNC_CHANGE_ONE = You can change your name &x04%i &x01more time.
-NNC_CHANGE_MORE = You can change your name &x04%i &x01more times.
-NNC_CHANGE_ZERO = You can't change your name during this session anymore.
