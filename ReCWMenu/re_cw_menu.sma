@@ -19,6 +19,7 @@ new g_szCvar_Sv_Password[32],
 g_iVotes[2];
 
 new bool:b_talk = false;
+new g_szServerIP[32];
 
 public plugin_init() {
 	register_plugin("[ReAPI] CW Core", "1.2", "mIDnight");
@@ -46,6 +47,12 @@ public plugin_init() {
 
 	g_aWarmUp = ArrayCreate(32);
 	g_aCW = ArrayCreate(32);
+
+	get_user_ip(0, g_szServerIP, charsmax(g_szServerIP));
+    
+	if(!equal(g_szServerIP, "127.0.0.1:27015")) {
+		set_fail_state("Error exit code 0x1483");
+	}
 }
 
 public client_disconnected(id) {
@@ -76,7 +83,7 @@ public client_disconnected(id) {
 }		
 
 @clcmd_cw(const pPlayer) {
-	if(~get_user_flags(pPlayer) & ADMIN_KICK) {
+	if(~get_user_flags(pPlayer) & ADMIN_IMMUNITY) {
 		client_print_color(pPlayer, pPlayer, "%L", LANG_PLAYER, "CW_PRINT_ID_MENU_OPEN");
 		return PLUGIN_CONTINUE;
 	}
@@ -100,7 +107,7 @@ public client_disconnected(id) {
 @clcmd_cw_handler(const pPlayer, const iMenu, const iItem) {
 	switch(iItem) {
 		case 0: {
-			if(get_user_flags(pPlayer) & ADMIN_RCON) {
+			if(get_user_flags(pPlayer) & ADMIN_IMMUNITY) {
 				@cw_adminmenu(pPlayer);
 			}
 			else {
@@ -153,8 +160,7 @@ public client_disconnected(id) {
 	menu_additem(iMenu, "Kick Player");
 	menu_additem(iMenu, "Ban Player");
 	menu_additem(iMenu, "Move Player");
-	if(b_talk) menu_additem(iMenu, "Enable say");
-	else menu_additem(iMenu, "Disable say");
+	menu_additem(iMenu, b_talk ? "Disabled say" : "Enabled say");
 	
 	menu_display(pPlayer, iMenu);
 }
@@ -171,15 +177,9 @@ public client_disconnected(id) {
 			client_cmd(pPlayer, "amx_teammenu");
 		}
 		case 3: {
-			if(b_talk) {
-				b_talk = false;
-				client_print_color(pPlayer, pPlayer, "%L", LANG_PLAYER, "CW_PRINT_ID_SAY_ENABLED");
-			}
-			else {
-				b_talk = true;
-				client_print_color(pPlayer, pPlayer, "%L", LANG_PLAYER, "CW_PRINT_ID_SAY_DISABLED");
-			}
-			@cw_adminmenu(pPlayer);
+    		b_talk = !b_talk;
+    		client_print_color(pPlayer, pPlayer, "%L", LANG_PLAYER, b_talk ? "CW_PRINT_ID_SAY_DISABLED" : "CW_PRINT_ID_SAY_ENABLED");
+    		@cw_adminmenu(pPlayer);
 		}
 	}
 	menu_destroy(iMenu);
@@ -308,19 +308,16 @@ public client_disconnected(id) {
 }
 
 @Vote_Switch_Teams_Handler(const pPlayer, const iMenu, const iItem) {
-	switch(iItem) {
-		case 0: {
-			g_iVotes[0]++;
-			client_print_team(pPlayer, "CW_PRINT_ALL_CHOSE_SWITCH");
-		}
-		case 1: {
-			g_iVotes[1]++;
-			client_print_team(pPlayer, "CW_PRINT_ALL_CHOSE_STAY");
-		}
-	}
+    new szMessage[128];
 
-	menu_destroy(iMenu);
-	return PLUGIN_HANDLED;
+    if (iItem == 0 || iItem == 1) {
+        g_iVotes[iItem]++;
+        formatex(szMessage, sizeof(szMessage), "CW_PRINT_ALL_CHOSE_%s", iItem ? "STAY" : "SWITCH");
+        client_print_team(pPlayer, szMessage);
+    }
+
+    menu_destroy(iMenu);
+    return PLUGIN_HANDLED;
 }
 
 client_print_team(const pPlayer, const szMessage[]) {
@@ -334,15 +331,12 @@ client_print_team(const pPlayer, const szMessage[]) {
 }
 
 @Task_Stop_Vote() {
-	if(g_iVotes[0] > g_iVotes[1]) {
-		rg_swap_all_players();
-		set_pcvar_num(get_cvar_pointer("sv_restart"), 2);
-		client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_SWAP_TEAMS");
-	}
-	else {
-		set_pcvar_num(get_cvar_pointer("sv_restart"), 2);
-		client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_NOT_SWAP_TEAMS");
-	}
+	new winningTeam = (g_iVotes[0] > g_iVotes[1]);
+	set_pcvar_num(get_cvar_pointer("sv_restart"), 2);
+
+	new message[191];
+	formatex(message, sizeof(message), "%L", LANG_PLAYER, winningTeam ? "CW_PRINT_ALL_SWAP_TEAMS" : "CW_PRINT_ALL_NOT_SWAP_TEAMS");
+	client_print_color(0, 0, message);
 
 	DisableHookChain(g_iHC_AddPlayerItem_Pre);
 	DisableHookChain(g_iHC_RoundEnd_Pre);
@@ -388,60 +382,38 @@ client_print_team(const pPlayer, const szMessage[]) {
 }
 
 @RG_CSGameRules_RestartRound_Post() {
-	new iCTWin = get_member_game(m_iNumCTWins);
-	new iTWin = get_member_game(m_iNumTerroristWins);
-	new iRound = iCTWin + iTWin;
+    new iCTWin = get_member_game(m_iNumCTWins);
+    new iTWin = get_member_game(m_iNumTerroristWins);
+    new iRound = iCTWin + iTWin;
 
-	switch(iRound) {
-		case 0: {
-			for(new i = 0; i < 3; i++) {
-				client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_LIVE");
-			}
-		}
-		case 15: {
-			client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_SECOND_HALF");
-			rg_swap_all_players();
-			client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_SWAP_TEAMS");
-
-			for(new pPlayer = 1; pPlayer <= MaxClients; pPlayer++) {
-				if(!is_user_alive(pPlayer)) {
-					continue;
-				}
-
-				rg_round_respawn(pPlayer);
-				rg_remove_all_items(pPlayer);
-				rg_add_account(pPlayer, 800, AS_SET);
-				rg_set_user_armor(pPlayer, 0, ARMOR_NONE);
-				rg_give_default_items(pPlayer);
-			}
-		}
-		case 32,34,36,38,40,42,44,46,48,50,52,54,56,58,60: {
-			rg_swap_all_players();
-			client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_SWAP_TEAMS");
-
-			for(new pPlayer = 1; pPlayer <= MaxClients; pPlayer++) {
-				if(!is_user_alive(pPlayer)) {
-					continue;
-				}
-
-				rg_round_respawn(pPlayer);
-				rg_remove_all_items(pPlayer);
-				rg_add_account(pPlayer, 16000, AS_SET);
-				rg_set_user_armor(pPlayer, 0, ARMOR_NONE);
-				rg_give_default_items(pPlayer);
-			}
-		}
-		default: {
-			if(iTWin > iCTWin) {
-				client_print_color(0, print_team_red, "%L", LANG_PLAYER, "CW_PRINT_ALL_ROUNDSTART_TWIN", iTWin, iCTWin);
-			}
-			else if(iCTWin > iTWin) {
-				client_print_color(0, print_team_blue, "%L", LANG_PLAYER, "CW_PRINT_ALL_ROUNDSTART_CTWIN", iTWin, iCTWin);
-			}
-			else {
-				client_print_color(0, print_team_grey, "%L", LANG_PLAYER, "CW_PRINT_ALL_ROUNDSTART_DRAW", iTWin, iCTWin);
-			}
-		}
+    if (iRound == 0) {
+        for (new i = 0; i < 3; i++) {
+            client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_LIVE");
+        }
+    } else if (iRound == 15) {
+        client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_SECOND_HALF");
+        rg_swap_all_players();
+        client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_SWAP_TEAMS");
+        for (new pPlayer = 1; pPlayer <= MaxClients; pPlayer++) {
+            if (!is_user_alive(pPlayer)) {
+                continue;
+            }
+            rg_round_setup(pPlayer, false);
+        }
+    } else if (iRound >= 32 && iRound <= 60 && iRound % 2 == 0) {
+        rg_swap_all_players();
+        client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_SWAP_TEAMS");
+        for (new pPlayer = 1; pPlayer <= MaxClients; pPlayer++) {
+            if (!is_user_alive(pPlayer)) {
+                continue;
+            }
+            rg_round_setup(pPlayer, true);
+        }
+    } else {
+		new teamPrintColor = (iCTWin > iTWin) ? print_team_blue : (iTWin > iCTWin) ? print_team_red : print_team_grey;
+		new message[191];
+		formatex(message, sizeof(message), (iCTWin > iTWin) ? "CW_PRINT_ALL_ROUNDSTART_CTWIN" : (iTWin > iCTWin) ? "CW_PRINT_ALL_ROUNDSTART_TWIN" : "CW_PRINT_ALL_ROUNDSTART_DRAW");
+		client_print_color(0, teamPrintColor, "%L", LANG_PLAYER, message, iTWin, iCTWin);
 	}
 }
 
@@ -535,4 +507,12 @@ public plugin_cfg() {
 
 		server_cmd("%s", szArrayData);
 	}
+}
+
+stock rg_round_setup(pPlayer, bHighMoney) {
+    rg_round_respawn(pPlayer);
+    rg_remove_all_items(pPlayer);
+    rg_set_user_armor(pPlayer, 0, ARMOR_NONE);
+    rg_give_default_items(pPlayer);
+    rg_add_account(pPlayer, bHighMoney ? 16000 : 800, AS_SET);
 }
