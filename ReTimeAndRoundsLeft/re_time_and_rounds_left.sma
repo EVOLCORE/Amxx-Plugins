@@ -1,6 +1,8 @@
 #include <amxmodx>
 #include <reapi>
 
+new const SayTag[] = "^4[Cortex]^1 ";      // Modify your chat prefix
+
 //#define ROUNDS_LEFT_HUD                 // Define/Undefine to show how many rounds left at end of round via HUD message.
 
 #if defined ROUNDS_LEFT_HUD
@@ -53,7 +55,7 @@ public plugin_init() {
 
         set_hudmessage(HUD_COLOR, HUD_POSITION, .holdtime = HUD_DURATION);
         show_hudmessage(0, "%s", hudMessage);
-    }    
+    }
     return PLUGIN_HANDLED;
 }
 #endif
@@ -61,7 +63,7 @@ public plugin_init() {
 @cmd_roundsleft(pPlayer) {
     new message[192];
     
-    formatex(message, sizeof(message), maxrounds <= 0 ? "Rounds left: ^3Unlimited" : "Rounds left: ^3%d", maxrounds <= 0 ? -1 : maxrounds - g_iRound);
+    formatex(message, sizeof(message), maxrounds <= 0 ? "%sRounds left: ^3Unlimited" : "%sRounds left: ^3%d", SayTag, maxrounds <= 0 ? -1 : maxrounds - g_iRound);
     client_print_color(pPlayer, print_team_default, message);
     
     return PLUGIN_HANDLED;
@@ -71,7 +73,7 @@ public plugin_init() {
     new message[192];
     new gtimelimit = get_timeleft();
 
-    formatex(message, sizeof(message), get_cvar_float("mp_timelimit") ? "Time left: ^3%d minutes and ^3%d seconds" : "Time limit is not set", (gtimelimit / 60), (gtimelimit % 60));
+    formatex(message, sizeof(message), get_cvar_float("mp_timelimit") ? "%sTime left: ^3%d minutes and ^3%d seconds" : "%s^3Time limit is not set", SayTag, (gtimelimit / 60), (gtimelimit % 60));
     client_print_color(pPlayer, print_team_default, message);
 
     return PLUGIN_HANDLED;
@@ -83,7 +85,7 @@ public plugin_init() {
     get_time("%H:%M", ctime, charsmax(ctime));
     new hrs = (str_to_num(ctime[0]) * 10 + str_to_num(ctime[1])) % 12;
     
-    formatex(message, sizeof(message), "The current time is: ^3%s %s", ctime, (hrs >= 12) ? "pm" : "am");
+    formatex(message, sizeof(message), "%sThe current time is: ^3%s %s", SayTag, ctime, (hrs >= 12) ? "pm" : "am");
     client_print_color(pPlayer, print_team_default, message);
 
     return PLUGIN_HANDLED;
@@ -94,7 +96,7 @@ public plugin_init() {
     rh_get_mapname(CurrentMap, charsmax(CurrentMap));
     new message[192];
 
-    formatex(message, sizeof(message), "The current map is: ^3%s", CurrentMap);
+    formatex(message, sizeof(message), "%sThe current map is: ^3%s", SayTag, CurrentMap);
     client_print_color(pPlayer, print_team_default, message);
 
     return PLUGIN_HANDLED;
