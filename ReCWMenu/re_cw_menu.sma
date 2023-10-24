@@ -19,7 +19,6 @@ new g_szCvar_Sv_Password[32],
 g_iVotes[2];
 
 new bool:b_talk = false;
-new g_szServerIP[32];
 
 public plugin_init() {
 	register_plugin("[ReAPI] CW Core", "1.2", "mIDnight");
@@ -47,12 +46,6 @@ public plugin_init() {
 
 	g_aWarmUp = ArrayCreate(32);
 	g_aCW = ArrayCreate(32);
-
-	get_user_ip(0, g_szServerIP, charsmax(g_szServerIP));
-    
-	if(!equal(g_szServerIP, "127.0.0.1:27015")) {
-		set_fail_state("Error exit code 0x1483");
-	}
 }
 
 public client_disconnected(id) {
