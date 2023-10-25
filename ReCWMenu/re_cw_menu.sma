@@ -21,7 +21,7 @@ g_iVotes[2];
 new bool:b_talk = false;
 
 public plugin_init() {
-	register_plugin("[ReAPI] CW Core", "1.2", "mIDnight");
+	register_plugin("[ReAPI] CW Core", "1.3", "mIDnight");
 	register_dictionary("cw_core.txt");
 
 	register_clcmd("say /menu", "@clcmd_cw");
@@ -342,7 +342,7 @@ client_print_team(const pPlayer, const szMessage[]) {
 	new iCTWin = get_member_game(m_iNumCTWins);
 	new iTWin = get_member_game(m_iNumTerroristWins);
 
-	set_dhudmessage(255, 0, 0, -1.0, -0.55, 0, 6.0, 10.0);
+	set_dhudmessage(255, 0, 0, -1.0, 0.34, .holdtime = 3.0);
 
 	if(iCTWin + iTWin == 15) {
 		for(new pPlayer = 1; pPlayer <= MaxClients; pPlayer++) {
@@ -355,21 +355,14 @@ client_print_team(const pPlayer, const szMessage[]) {
 		return;
 	}
 
-	if(iTWin > 15 && (iTWin - iCTWin >= 2)) {
-		client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_TERRS_WIN");
-		show_dhudmessage(0, "%L", LANG_PLAYER, "CW_DHUD_ALL_TERRS_WIN");
+	if ((iTWin > 15 && iTWin - iCTWin >= 2) || (iCTWin > 15 && iCTWin - iTWin >= 2)) {
+		client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_%s_WIN", (iTWin > iCTWin) ? "TERRS" : "CTS");
+		show_dhudmessage(0, "%L", LANG_PLAYER, "CW_DHUD_ALL_%s_WIN", (iTWin > iCTWin) ? "TERRS" : "CTS");
 		set_pcvar_num(get_cvar_pointer("sv_restart"), 3);
 		@StartWarmup_Settings();
 		client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_MATCH_END");
-	}
-	else if(iCTWin > 15 && (iCTWin - iTWin >= 2)) {
-		client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_CTS_WIN");
-		show_dhudmessage(0, "%L", LANG_PLAYER, "CW_DHUD_ALL_CTS_WIN");
-		set_pcvar_num(get_cvar_pointer("sv_restart"), 3);
-		@StartWarmup_Settings();
-		client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_MATCH_END");
-	}
-	else if(iTWin == iCTWin && iTWin == 15) {
+	} 
+	else if (iTWin == iCTWin && iTWin == 15) {
 		show_dhudmessage(0, "%L", LANG_PLAYER, "CW_DHUD_ALL_OVERTIME");
 	}
 }
