@@ -441,48 +441,42 @@ client_print_team(const pPlayer, const szMessage[]) {
 }
 
 public plugin_cfg() {
-	new szFileName[35];
-	get_localinfo("amxx_configsdir", szFileName, charsmax(szFileName));
-	add(szFileName, charsmax(szFileName), "/cw_core.cfg");
+    new szFileName[35];
+    get_localinfo("amxx_configsdir", szFileName, charsmax(szFileName));
+    add(szFileName, charsmax(szFileName), "/cw_core.cfg");
 
-	server_print("%s", szFileName);
-	if(!file_exists(szFileName)) {
-		pause("d");
-		return;
-	}
+    if (!file_exists(szFileName)) {
+        server_print("%s", szFileName);
+        pause("d");
+        return;
+    }
 
-	new iFile = fopen(szFileName, "r");
+    new iFile = fopen(szFileName, "r");
 
-	if(iFile) {
-		new szBuffer[MAX_FMT_LENGTH], szData[64], iLen;
+    if (!iFile) return;
 
-		while(!feof(iFile)) {
-			fgets(iFile, szBuffer, charsmax(szBuffer));
-			trim(szBuffer);
+    new szBuffer[MAX_FMT_LENGTH], szData[64], iLen;
 
-			if(szBuffer[0] == EOS || szBuffer[0] == ';') {
-				continue;
-			}
+    while (fgets(iFile, szBuffer, charsmax(szBuffer))) {
+        trim(szBuffer);
 
-			if(szBuffer[0] == '[') {
-				iLen = strlen(szBuffer);
-				copyc(szData, charsmax(szData), szBuffer[1], szBuffer[iLen - 1]);
-				continue;
-			}
+        if (szBuffer[0] == EOS || szBuffer[0] == ';') continue;
 
-			switch(szData[0]) {
-				case 'W': {
-					ArrayPushString(g_aWarmUp, szBuffer);
-				}
-				case 'C': {
-					ArrayPushString(g_aCW, szBuffer);
-				}
-			}
-		}
-		fclose(iFile);
+        if (szBuffer[0] == '[') {
+            iLen = strlen(szBuffer);
+            copyc(szData, charsmax(szData), szBuffer[1], szBuffer[iLen - 1]);
+            continue;
+        }
 
-		@StartWarmup_Settings();
-	}
+        switch (szData[0]) {
+            case 'W': ArrayPushString(g_aWarmUp, szBuffer);
+            case 'C': ArrayPushString(g_aCW, szBuffer);
+        }
+    }
+
+    fclose(iFile);
+
+    @StartWarmup_Settings();
 }
 
 @SetSettings(const Array:aArray) {
