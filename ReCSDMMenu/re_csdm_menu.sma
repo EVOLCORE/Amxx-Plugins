@@ -4,9 +4,7 @@
 #include <fakemeta>
 #include <reapi>
 
-#define PLUGIN  					"[ReAPI] CSDM Menu"
-#define VERSION 					"1.3"
-#define AUTHOR  					"mIDnight"
+#pragma compress 1
 
 #if !defined MAX_PLAYERS
 #define MAX_PLAYERS 				32
@@ -16,16 +14,16 @@
 #define TASK_KILLS					12023
 #define TASK_CHAT					13923
 
-#define BONUS_NORMAL                0.0
-#define BONUS_HEAD                  15.0
-#define MAX_HEALTH                  100.0
+new const HUD_HSPOS[] 			= 		"HUD_HS_POSITION"
+new const HUD_HSCOLOR[]			= 		"HUD_HS_COLOR"
+new const HUD_KILLS_POS[]		=		"HUD_KILLS_POSITION"
+new const HUD_KILLS_COLOR[]		=		"HUD_KILLS_COLOR"
+new const FADE_COLOR[] 			= 		"FADE_COLOR"
+new const MENU_CMDS[] 			= 		"MENU_COMMANDS"
+new const BONUS_MAX_HP[]		=		"BONUS_MAX_HP"
+new const BONUS_HP_NORMAL[]		=		"BONUS_HP_NORMAL"
+new const BONUS_HP_HS[]			=		"BONUS_HP_HS"
 
-new const HUD_HSPOS[] 		= 		"HUD_HS_POSITION"
-new const HUD_HSCOLOR[]		= 		"HUD_HS_COLOR"
-new const HUD_KILLS_POS[]	=		"HUD_KILLS_POSITION"
-new const HUD_KILLS_COLOR[]	=		"HUD_KILLS_COLOR"
-new const FADE_COLOR[] 		= 		"FADE_COLOR"
-new const MENU_CMDS[] 		= 		"MENU_COMMANDS"
 
 enum _:Settings {
 	Float:HudHSPosX,
@@ -65,11 +63,12 @@ new g_iSize = sizeof(g_flCoords)
 new g_eFileSettings[Settings]
 new g_ePlayerSettings[MAX_PLAYERS + 1][CsdmSettings]
 new g_iKillsCounter[MAX_PLAYERS + 1][KillType]
+new Float:g_iBonusHP, Float:g_iBonusNormal, Float:g_iBonusHS
 new bool:g_bIsUserDead[MAX_PLAYERS + 1]
 new bool:g_bIsHeadshot[MAX_PLAYERS + 1][MAX_PLAYERS + 1]
 
 public plugin_init() {
-	register_plugin(PLUGIN, VERSION, AUTHOR)
+	register_plugin("[ReAPI] CSDM Menu", "1.3", "mIDnight")
 	
 	register_dictionary("element_csdm_menu.txt")
 
@@ -146,6 +145,13 @@ public plugin_precache() {
 							register_clcmd(szString, "Clcmd_CSDM_Menu")
 						}
 					}
+					else if (equal(szString, BONUS_MAX_HP)) {
+						g_iBonusHP = str_to_float(szValue)
+					} else if (equal(szString, BONUS_HP_NORMAL)) {
+						g_iBonusNormal = str_to_float(szValue)
+					} else if (equal(szString, BONUS_HP_HS)) {
+                        g_iBonusHS = str_to_float(szValue)
+                    }
 				}
 			}
 		}
@@ -242,10 +248,8 @@ public RG_Player_Killed_Post(const iVictim, iAttacker, iGibs) {
 		}
 	}
 
-	if(g_ePlayerSettings[iAttacker][bHealing]) {
-		new Float:oldHP = get_entvar(iAttacker, var_health)
-		new Float:newHP = floatclamp(oldHP + (get_member(iVictim, m_bHeadshotKilled) ? BONUS_HEAD : BONUS_NORMAL), 0.0, MAX_HEALTH)
-		set_entvar(iAttacker, var_health, newHP)
+	if (g_ePlayerSettings[iAttacker][bHealing]) {
+		set_entvar(iAttacker, var_health, floatmin(Float:get_entvar(iAttacker, var_health) + (get_member(iVictim, m_bHeadshotKilled) ? g_iBonusHS : g_iBonusNormal), g_iBonusHP));
 	}
 
 	return HC_CONTINUE
