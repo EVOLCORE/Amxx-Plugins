@@ -5,6 +5,7 @@
 
 /* YOU CAN UNDEFINE WHATEVER YOU WANT */
 #define VIP_ACCESS      ADMIN_LEVEL_H    // VIP ACCESS
+#define ADMIN_LOADER                // ADMIN LOADER SUPPORT
 #define DAMAGER                     // DAMAGE THINGS
 //#define VIP_MODEL                 // VIP MODELS
 #define STEAM_VIP		            // VIP will be free for STEAM players if define is on
@@ -54,7 +55,9 @@ g_iPistol[MAX_CLIENTS + 1], bool:g_blWeapon[MAX_CLIENTS + 1], g_iRound, Float:g_
     new HookChain:g_iHC_Spawn_Post;
 #endif    
 
-native native_Access_GetAccessInfo(id, sPassword[] = "", sAccess[] = "", sDateEnd[] = "", sFullName[] = "", sContacts[] = "");
+#if defined ADMIN_LOADER
+    native native_Access_GetAccessInfo(id, sPassword[] = "", sAccess[] = "", sDateEnd[] = "", sFullName[] = "", sContacts[] = "");
+#endif    
 
 public plugin_init() {
     register_plugin("[ReAPI] VIP system", "0.0.7", "mIDnight");
@@ -131,24 +134,28 @@ public OnConfigsExecuted() {
         return PLUGIN_HANDLED;
     }
 
+    new iMenu;
+
+    #if defined ADMIN_LOADER
     new iExp = 0, sDateEnd[128];
+
     if (native_Access_GetAccessInfo(pPlayer, .sDateEnd = sDateEnd)) {
         if (!equal(sDateEnd, "lifetime")) {
             formatex(sDateEnd, charsmax(sDateEnd), "%s 00:00:00", sDateEnd);
             iExp = parse_time(sDateEnd, "%d:%m:%Y %H:%M:%S") + 86400;
         }
     }
-
-    new iMenu, iDays;
+    
     if (iExp > 0) {
         iExp = max(iExp - get_systime(), 0);
-        iDays = iExp / 86400;
-
-        iMenu = menu_create(fmt("\y|\rHyperWorld\y| VIP Menu: \r[%d %s\r]", iDays, (iDays > 1) ? "\wdays" : "\wday"), "@clcmd_vipmenu_handler");
+        new iDays = iExp / 86400;
+        iMenu = menu_create(fmt("\y|\rHyperWorld\y| VIP Menu: \r[/w%d %s\r]", iDays, (iDays > 1) ? "days" : "day"), "@clcmd_vipmenu_handler");
+    } else if (iExp == 0) {
+        iMenu = menu_create(fmt("\y|\rHyperWorld\y| VIP Menu: \r[/w%s\r]", g_blNightMode ? "Free 22-10 hour" : (is_user_steam(pPlayer) ? "Steam" : "Lifetime")), "@clcmd_vipmenu_handler");
     }
-    else if (iExp == 0) {
-        iMenu = menu_create(fmt("\y\y|\rHyperWorld\y| VIP Menu: \r[%s\r]", g_blNightMode ? "\wFree 22-10 hour" : (is_user_steam(pPlayer) ? "\wSteam" : "\wLifetime")), "@clcmd_vipmenu_handler");
-    }
+    #else
+    iMenu = menu_create(fmt("\y|\rHyperWorld\y| VIP Menu: \r[/w%s\r]", g_blNightMode ? "Free 22-10 hour" : (is_user_steam(pPlayer) ? "Steam" : "Standard")), "@clcmd_vipmenu_handler");
+    #endif
 
     menu_additem(iMenu, "\yTake \wAK47");
     menu_additem(iMenu, "\yTake \wM4A1^n");
