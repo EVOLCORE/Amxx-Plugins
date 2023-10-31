@@ -139,22 +139,14 @@ public OnConfigsExecuted() {
     #if defined ADMIN_LOADER
     new iExp = 0, sDateEnd[128];
 
-    if (native_Access_GetAccessInfo(pPlayer, .sDateEnd = sDateEnd)) {
-        if (!equal(sDateEnd, "lifetime")) {
-            formatex(sDateEnd, charsmax(sDateEnd), "%s 00:00:00", sDateEnd);
-            iExp = parse_time(sDateEnd, "%d:%m:%Y %H:%M:%S") + 86400;
-        }
-    }
-    
-    if (iExp > 0) {
-        iExp = max(iExp - get_systime(), 0);
-        new iDays = iExp / 86400;
-        iMenu = menu_create(fmt("\y|\rHyperWorld\y| VIP Menu: \r[/w%d %s\r]", iDays, (iDays > 1) ? "days" : "day"), "@clcmd_vipmenu_handler");
+    if (native_Access_GetAccessInfo(pPlayer, .sDateEnd = sDateEnd) && !equal(sDateEnd, "lifetime")) {
+        iExp = max(parse_time(sDateEnd, "%d:%m:%Y %H:%M:%S") + 86400 - get_systime(), 0);
+        iMenu = menu_create(fmt("\y|\rHyperWorld\y| VIP Menu: \r[\w%d %s\r]", iExp / 86400, (iExp / 86400 > 1) ? "days" : "day"), "@clcmd_vipmenu_handler");
     } else if (iExp == 0) {
-        iMenu = menu_create(fmt("\y|\rHyperWorld\y| VIP Menu: \r[/w%s\r]", g_blNightMode ? "Free 22-10 hour" : (is_user_steam(pPlayer) ? "Steam" : "Lifetime")), "@clcmd_vipmenu_handler");
+        iMenu = menu_create(fmt("\y|\rHyperWorld\y| VIP Menu: \r[\w%s\r]", g_blNightMode ? "Free 22-10 hour" : (is_user_steam(pPlayer) ? "Steam" : "Lifetime")), "@clcmd_vipmenu_handler");
     }
     #else
-    iMenu = menu_create(fmt("\y|\rHyperWorld\y| VIP Menu: \r[/w%s\r]", g_blNightMode ? "Free 22-10 hour" : (is_user_steam(pPlayer) ? "Steam" : "Standard")), "@clcmd_vipmenu_handler");
+    iMenu = menu_create(fmt("\y|\rHyperWorld\y| VIP Menu: \r[\w%s\r]", g_blNightMode ? "Free 22-10 hour" : (is_user_steam(pPlayer) ? "Steam" : "Standard")), "@clcmd_vipmenu_handler");
     #endif
 
     menu_additem(iMenu, "\yTake \wAK47");
