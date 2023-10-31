@@ -146,7 +146,7 @@ public OnConfigsExecuted() {
         formatex(szMenuData, sizeof(szMenuData), "|HyperWorld| VIP Menu: \r[\w%s\r]", (iExp == 0 && is_user_steam(pPlayer)) ? "Lifetime" : (g_blNightMode ? "Free 22-10 hour" : "Steam"));
     }
     #else
-    formatex(szMenuData, sizeof(szMenuData), "\y|\rHyperWorld\y| VIP Menu: \r[\w%s\r]", (g_blNightMode ? "Free 22-10 hour" : (is_user_steam(pPlayer) ? "Steam" : "Standard")));
+    formatex(szMenuData, sizeof(szMenuData), "\y|\rHyperWorld\y| VIP Menu: \r[\w%s\r]", (g_blNightMode ? "Free 22-10 hour" : (is_user_steam(pPlayer) ? "Steam" : "Lifetime")));
     #endif
 
     iMenu = menu_create(szMenuData, "@clcmd_vipmenu_handler");
