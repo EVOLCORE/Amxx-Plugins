@@ -7,12 +7,12 @@
 #pragma compress 1
 
 #if !defined MAX_PLAYERS
-#define MAX_PLAYERS 				32
+#define MAX_PLAYERS 					32
 #endif
 
-#define IsPlayer(%1) 				(1 <= %1 <= MAX_PLAYERS)
-#define TASK_KILLS					12023
-#define TASK_CHAT					13923
+#define IsPlayer(%1) 					(1 <= %1 <= MAX_PLAYERS)
+#define TASK_KILLS						12023
+#define TASK_CHAT						13923
 
 new const HUD_HSPOS[] 			= 		"HUD_HS_POSITION"
 new const HUD_HSCOLOR[]			= 		"HUD_HS_COLOR"
@@ -55,12 +55,7 @@ enum _:KillType {
 	Headshot = 1
 }
 
-new const Float: g_flCoords[][] = { {0.50, 0.40}, {0.56, 0.44}, {0.60, 0.50}, {0.56, 0.56}, {0.50, 0.60}, {0.44, 0.56}, {0.40, 0.50}, {0.44, 0.44} };
-
-new g_iPosition[33]
-new g_iSize = sizeof(g_flCoords)
-
-new g_eFileSettings[Settings]
+new g_eFileSettings[Settings], g_iHudSyncObj
 new g_ePlayerSettings[MAX_PLAYERS + 1][CsdmSettings]
 new g_iKillsCounter[MAX_PLAYERS + 1][KillType]
 new Float:g_iBonusHP, Float:g_iBonusNormal, Float:g_iBonusHS
@@ -76,6 +71,8 @@ public plugin_init() {
 	RegisterHookChain(RG_CBasePlayer_TraceAttack, "RG_Player_TraceAttack_Pre")
 	RegisterHookChain(RG_CBasePlayer_Killed, "RG_Player_Killed_Post", 1)
 	RegisterHookChain(RG_CBasePlayer_Spawn, "RG_Player_Spawn_Post", 1)
+
+	g_iHudSyncObj = CreateHudSyncObj();
 }
 
 public plugin_precache() {
@@ -187,16 +184,14 @@ public RG_Player_Damage_Post(iVictim, iInflictor, iAttacker, Float:fDamage, bits
 	#endif
 		return HC_CONTINUE
 
-	new iDamage[4]
-	float_to_str(fDamage, iDamage, charsmax(iDamage))
-	replace_all(iDamage, charsmax(iDamage), ".", "")
+	static const Float: iDamageCoords[][] = { {0.50, 0.40}, {0.56, 0.44}, {0.60, 0.50}, {0.56, 0.56}, {0.50, 0.60}, {0.44, 0.56}, {0.40, 0.50}, {0.44, 0.44} };
+	static iDamageCoordPos[MAX_CLIENTS + 1];
 
 	if(g_ePlayerSettings[iAttacker][bBulletDamage] && !(g_ePlayerSettings[iAttacker][bHeadshotMode] && get_member( iAttacker , m_LastHitGroup ) == HIT_HEAD)) {
-		if(++g_iPosition[iAttacker] == g_iSize)
-      		g_iPosition[iAttacker] = 0
-    
-		set_hudmessage(random_num(0, 255), random_num(0, 255), random_num(0, 255), Float:g_flCoords[g_iPosition[iAttacker]][0], Float:g_flCoords[g_iPosition[iAttacker]][1], 0, 0.1, 1.1, 0.02, 0.02)
-		show_hudmessage(iAttacker, "%s", iDamage)
+		set_hudmessage(random_num(0, 255), random_num(0, 255), random_num(0, 255), iDamageCoords[iDamageCoordPos[iAttacker]][0], iDamageCoords[iDamageCoordPos[iAttacker]][1], _, _, 1.0)
+		ShowSyncHudMsg(iAttacker, g_iHudSyncObj, "%.0f", fDamage);
+
+		iDamageCoordPos[iAttacker] = (iDamageCoordPos[iAttacker] + 1) % sizeof(iDamageCoords);
 	}
 	
 	return HC_CONTINUE
@@ -266,89 +261,39 @@ public RG_Player_Spawn_Post(iEntity) {
 }
 
 public Clcmd_CSDM_Menu(id) {
-	new szTemp[128]
-	formatex(szTemp, charsmax(szTemp), "\w%L", LANG_PLAYER, "CSDM_SETTINGS_TITLE")
-	new menu = menu_create(szTemp, "settings_menu_handler")
+    new szTemp[128];
+    formatex(szTemp, charsmax(szTemp), "\w%L", LANG_PLAYER, "CSDM_SETTINGS_TITLE");
+    new menu = menu_create(szTemp, "settings_menu_handler");
 
-	formatex(szTemp, charsmax(szTemp), "\w%L %s", LANG_PLAYER, "CSDM_ONLY_HS", g_ePlayerSettings[id][bHeadshotMode] ? "\w[\yON\w]" : "\w[\rOFF\w]")
-	menu_additem(menu, szTemp)
-	formatex(szTemp, charsmax(szTemp), "\w%L %s", LANG_PLAYER, "CSDM_FADE_SCREEN", g_ePlayerSettings[id][bScreenFade] ? "\w[\yON\w]" : "\w[\rOFF\w]")
-	menu_additem(menu, szTemp)
-	formatex(szTemp, charsmax(szTemp), "\w%L %s", LANG_PLAYER, "CSDM_BULLET_DAMAGE", g_ePlayerSettings[id][bBulletDamage] ? "\w[\yON\w]" : "\w[\rOFF\w]")
-	menu_additem(menu, szTemp)
-	formatex(szTemp, charsmax(szTemp), "\w%L %s", LANG_PLAYER, "CSDM_HEADSHOT_MSG", g_ePlayerSettings[id][bHeadshotMsg] ? "\w[\yON\w]" : "\w[\rOFF\w]")
-	menu_additem(menu, szTemp)
-	formatex(szTemp, charsmax(szTemp), "\w%L %s", LANG_PLAYER, "CSDM_ALL_KILLS", g_ePlayerSettings[id][bKillsCounter] ? "\w[\yON\w]" : "\w[\rOFF\w]")
-	menu_additem(menu, szTemp)
-	formatex(szTemp, charsmax(szTemp), "\w%L %s", LANG_PLAYER, "CSDM_BONUS_HP", g_ePlayerSettings[id][bHealing] ? "\w[\yON\w]" : "\w[\rOFF\w]")
-	menu_additem(menu, szTemp)
+    new settingLabels[][64] = {
+        "CSDM_ONLY_HS",
+        "CSDM_FADE_SCREEN",
+        "CSDM_BULLET_DAMAGE",
+        "CSDM_HEADSHOT_MSG",
+        "CSDM_ALL_KILLS",
+        "CSDM_BONUS_HP"
+    };
 
-	menu_display(id, menu)
+    for (new setting = 0; setting < sizeof(settingLabels); setting++) {
+        formatex(szTemp, charsmax(szTemp), "\w%L %s", LANG_PLAYER, settingLabels[setting],
+            g_ePlayerSettings[id][setting] ? "\w[\yON\w]" : "\w[\rOFF\w]");
+        menu_additem(menu, szTemp);
+    }
+
+    menu_display(id, menu);
 }
 
 public settings_menu_handler(id, menu, item) {
-	if(item == MENU_EXIT || !is_user_connected(id)) {
-		return MenuExit(menu)
-	}
+    if (item == MENU_EXIT || !is_user_connected(id)) {
+        return MenuExit(menu);
+    }
 
-	switch(item) {
-		case 0: {
-			if(g_ePlayerSettings[id][bHeadshotMode]) {
-				g_ePlayerSettings[id][bHeadshotMode] = false
-			}
-			else {
-				g_ePlayerSettings[id][bHeadshotMode] = true
-			}
-			Clcmd_CSDM_Menu(id)
-		}
-		case 1: {
-			if(g_ePlayerSettings[id][bScreenFade]) {
-				g_ePlayerSettings[id][bScreenFade] = false
-			}
-			else {
-				g_ePlayerSettings[id][bScreenFade] = true
-			}
-			Clcmd_CSDM_Menu(id)
-		}
-		case 2: {
-			if(g_ePlayerSettings[id][bBulletDamage]) {
-				g_ePlayerSettings[id][bBulletDamage] = false
-			}
-			else {
-				g_ePlayerSettings[id][bBulletDamage] = true
-			}
-			Clcmd_CSDM_Menu(id)
-		}
-		case 3: {
-			if(g_ePlayerSettings[id][bHeadshotMsg]) {
-				g_ePlayerSettings[id][bHeadshotMsg] = false
-			}
-			else {
-				g_ePlayerSettings[id][bHeadshotMsg] = true
-			}
-			Clcmd_CSDM_Menu(id)
-		}
-		case 4: {
-			if(g_ePlayerSettings[id][bKillsCounter]) {
-				g_ePlayerSettings[id][bKillsCounter] = false
-			}
-			else {
-				g_ePlayerSettings[id][bKillsCounter] = true
-			}
-			Clcmd_CSDM_Menu(id)
-		}
-		case 5: {
-			if(g_ePlayerSettings[id][bHealing]) {
-				g_ePlayerSettings[id][bHealing] = false
-			}
-			else {
-				g_ePlayerSettings[id][bHealing] = true
-			}
-			Clcmd_CSDM_Menu(id)
-		}
-	}
+    if (item >= 0 && item < CsdmSettings) {
+        g_ePlayerSettings[id][item] = !g_ePlayerSettings[id][item];
+        Clcmd_CSDM_Menu(id);
+    }
 
-	return MenuExit(menu)
+    return MenuExit(menu);
 }
 
 public task_show_chat_ad(id) {
