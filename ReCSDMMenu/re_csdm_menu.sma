@@ -1,4 +1,4 @@
-#define FFA_MODE
+//#define FFA_MODE
 
 #include <amxmodx>
 #include <fakemeta>
@@ -14,16 +14,17 @@
 #define TASK_KILLS						12023
 #define TASK_CHAT						13923
 
-new const HUD_HSPOS[] 			= 		"HUD_HS_POSITION"
-new const HUD_HSCOLOR[]			= 		"HUD_HS_COLOR"
-new const HUD_KILLS_POS[]		=		"HUD_KILLS_POSITION"
-new const HUD_KILLS_COLOR[]		=		"HUD_KILLS_COLOR"
-new const FADE_COLOR[] 			= 		"FADE_COLOR"
-new const MENU_CMDS[] 			= 		"MENU_COMMANDS"
-new const BONUS_MAX_HP[]		=		"BONUS_MAX_HP"
-new const BONUS_HP_NORMAL[]		=		"BONUS_HP_NORMAL"
-new const BONUS_HP_HS[]			=		"BONUS_HP_HS"
-
+new const FILE_SETTINGS[][] = {
+    "HUD_HS_POSITION",
+    "HUD_HS_COLOR",
+    "HUD_KILLS_POSITION",
+    "HUD_KILLS_COLOR",
+    "FADE_COLOR",
+    "MENU_COMMANDS",
+    "BONUS_MAX_HP",
+    "BONUS_HP_NORMAL",
+    "BONUS_HP_HS"
+}
 
 enum _:Settings {
 	Float:HudHSPosX,
@@ -38,7 +39,10 @@ enum _:Settings {
 	HudKillColorB,
 	FadeColorR,
 	FadeColorG,
-	FadeColorB
+	FadeColorB,
+	Float:g_iBonusHP,
+	Float:g_iBonusNormal,
+	Float:g_iBonusHS
 }
 
 enum _:CsdmSettings {
@@ -58,7 +62,6 @@ enum _:KillType {
 new g_eFileSettings[Settings], g_iHudSyncObj
 new g_ePlayerSettings[MAX_PLAYERS + 1][CsdmSettings]
 new g_iKillsCounter[MAX_PLAYERS + 1][KillType]
-new Float:g_iBonusHP, Float:g_iBonusNormal, Float:g_iBonusHS
 new bool:g_bIsUserDead[MAX_PLAYERS + 1]
 new bool:g_bIsHeadshot[MAX_PLAYERS + 1][MAX_PLAYERS + 1]
 
@@ -67,93 +70,78 @@ public plugin_init() {
 	
 	register_dictionary("element_csdm_menu.txt")
 
-	RegisterHookChain(RG_CBasePlayer_TakeDamage, "RG_Player_Damage_Post", 1)
-	RegisterHookChain(RG_CBasePlayer_TraceAttack, "RG_Player_TraceAttack_Pre")
-	RegisterHookChain(RG_CBasePlayer_Killed, "RG_Player_Killed_Post", 1)
-	RegisterHookChain(RG_CBasePlayer_Spawn, "RG_Player_Spawn_Post", 1)
+	RegisterHookChain(RG_CBasePlayer_TakeDamage, "RG_Player_Damage_Post", .post = true)
+	RegisterHookChain(RG_CBasePlayer_TraceAttack, "RG_Player_TraceAttack_Pre", .post = false)
+	RegisterHookChain(RG_CBasePlayer_Killed, "RG_Player_Killed_Post", .post = true)
+	RegisterHookChain(RG_CBasePlayer_Spawn, "RG_Player_Spawn_Post", .post = true)
 
-	g_iHudSyncObj = CreateHudSyncObj();
+	g_iHudSyncObj = CreateHudSyncObj()
 }
 
 public plugin_precache() {
-	new iFile = fopen("addons/amxmodx/configs/CSDMMenu.ini", "rt");
-	if(!iFile) set_fail_state("File ^"addons/amxmodx/configs/CSDMMenu.ini^" NOT read!");
+    new Path[MAX_RESOURCE_PATH_LENGTH]
+    get_localinfo("amxx_configsdir", Path, charsmax(Path))
+    formatex(Path, charsmax(Path), "%s/CSDMMenu.ini", Path)
 
-	if(iFile) {
-		new szData[128], iSection, szString[64], szValue[64]
+    if(!file_exists(Path)) {
+        set_fail_state("File not found 'CSDMMenu.ini' path to 'addons/amxmodx/configs/'")
+    }
+	
+    new szData[128], f = fopen(Path, "rt"), iSection, szString[64], szValue[64]
 
-		while(!feof(iFile)) {
-			fgets(iFile, szData, charsmax(szData))
-			trim(szData)
+    while (!feof(f)) {
+        fgets(f, szData, charsmax(szData))
+        trim(szData)
 
-			if(szData[0] == '#' || szData[0] == EOS || szData[0] == ';')
-				continue
+        if (szData[0] == '#' || szData[0] == EOS || szData[0] == ';')
+            continue
 
-			if(szData[0] == '[') {
-				iSection += 1
-			}
-			switch(iSection) {
-				case 1: {
-					strtok2(szData, szString, charsmax(szString), szValue, charsmax(szValue), '=', TRIM_INNER)
+        if (szData[0] == '[') {
+            iSection++
+            continue
+        }
 
-					if(szValue[0] == EOS || !szValue[0])
-						continue
+        if (iSection != 1)
+            continue
 
-					if(equal(szString, HUD_HSPOS)) {
-						new szHudHSPosX[5], szHudHSPosY[5]
-						parse(szValue, szHudHSPosX, charsmax(szHudHSPosX), szHudHSPosY, charsmax(szHudHSPosY))
+        strtok2(szData, szString, charsmax(szString), szValue, charsmax(szValue), '=', TRIM_INNER)
 
-						g_eFileSettings[HudHSPosX] = str_to_float(szHudHSPosX)
-						g_eFileSettings[HudHSPosY] = str_to_float(szHudHSPosY)
-					}
-					else if(equal(szString, HUD_HSCOLOR)) {
-						new szHudHSColorR[4], szHudHSColorG[4], szHudHSColorB[4]
-						parse(szValue, szHudHSColorR, charsmax(szHudHSColorR), szHudHSColorG, charsmax(szHudHSColorG), szHudHSColorB, charsmax(szHudHSColorB))
+        if (szValue[0] == EOS || !szValue[0])
+            continue
 
-						g_eFileSettings[HudHSColorR] = str_to_num(szHudHSColorR)
-						g_eFileSettings[HudHSColorG] = str_to_num(szHudHSColorG)
-						g_eFileSettings[HudHSColorB] = str_to_num(szHudHSColorB)
-					}
-					else if(equal(szString, HUD_KILLS_POS)) {
-						new szHudKillPosX[5], szHudKillPosY[5]
-						parse(szValue, szHudKillPosX, charsmax(szHudKillPosX), szHudKillPosY, charsmax(szHudKillPosY))
+        for (new i = 0; i < sizeof(FILE_SETTINGS); i++) {
+            if (!equal(szString, FILE_SETTINGS[i]))
+                continue
 
-						g_eFileSettings[HudKillPosX] = str_to_float(szHudKillPosX)
-						g_eFileSettings[HudKillPosY] = str_to_float(szHudKillPosY)
-					}
-					else if(equal(szString, HUD_KILLS_COLOR)) {
-						new szHudKillColorR[4], szHudKillColorG[4], szHudKillColorB[4]
-						parse(szValue, szHudKillColorR, charsmax(szHudKillColorR), szHudKillColorG, charsmax(szHudKillColorG), szHudKillColorB, charsmax(szHudKillColorB))
+            switch (i) {
+                case 0, 2: {
+                    new szHudPosX[5], szHudPosY[5]
+                    parse(szValue, szHudPosX, charsmax(szHudPosX), szHudPosY, charsmax(szHudPosY))
 
-						g_eFileSettings[HudKillColorR] = str_to_num(szHudKillColorR)
-						g_eFileSettings[HudKillColorG] = str_to_num(szHudKillColorG)
-						g_eFileSettings[HudKillColorB] = str_to_num(szHudKillColorB)
-					}
-					else if(equal(szString, FADE_COLOR)) {
-						new szFadeColorR[4], szFadeColorG[4], szFadeColorB[4]
-						parse(szValue, szFadeColorR, charsmax(szFadeColorR), szFadeColorG, charsmax(szFadeColorG), szFadeColorB, charsmax(szFadeColorB))
-						
-						g_eFileSettings[FadeColorR] = str_to_num(szFadeColorR)
-						g_eFileSettings[FadeColorG] = str_to_num(szFadeColorG)
-						g_eFileSettings[FadeColorB] = str_to_num(szFadeColorB)
-					}
-					else if(equal(szString, MENU_CMDS)) {
-						while(szValue[0] != EOS && strtok2(szValue, szString, charsmax(szString), szValue, charsmax(szValue), ',', TRIM_INNER)) {
-							register_clcmd(szString, "Clcmd_CSDM_Menu")
-						}
-					}
-					else if (equal(szString, BONUS_MAX_HP)) {
-						g_iBonusHP = str_to_float(szValue)
-					} else if (equal(szString, BONUS_HP_NORMAL)) {
-						g_iBonusNormal = str_to_float(szValue)
-					} else if (equal(szString, BONUS_HP_HS)) {
-                        g_iBonusHS = str_to_float(szValue)
+                    g_eFileSettings[i == 0 ? HudHSPosX : HudKillPosX] = (float:str_to_float(szHudPosX))
+                    g_eFileSettings[i == 0 ? HudHSPosY : HudKillPosY] = (float:str_to_float(szHudPosY))
+                }
+                case 1, 3, 4: {
+                    new szColorR[4], szColorG[4], szColorB[4]
+                    parse(szValue, szColorR, charsmax(szColorR), szColorG, charsmax(szColorG), szColorB, charsmax(szColorB))
+
+                    g_eFileSettings[i == 1 ? HudHSColorR : (i == 3 ? HudKillColorR : FadeColorR)] = str_to_num(szColorR)
+                    g_eFileSettings[i == 1 ? HudHSColorG : (i == 3 ? HudKillColorG : FadeColorG)] = str_to_num(szColorG)
+                    g_eFileSettings[i == 1 ? HudHSColorB : (i == 3 ? HudKillColorB : FadeColorB)] = str_to_num(szColorB)
+                }
+                case 5: {
+                    new szCmd[64]
+                    while (szValue[0] != EOS && strtok2(szValue, szCmd, charsmax(szCmd), szValue, charsmax(szValue), ',', TRIM_INNER)) {
+                        register_clcmd(szCmd, "Clcmd_CSDM_Menu")
                     }
-				}
-			}
-		}
-	}
-	fclose(iFile)
+                }
+                case 6, 7, 8: {
+					g_eFileSettings[i == 6 ? g_iBonusHP : i == 7 ? g_iBonusNormal : g_iBonusHS] = (float:str_to_float(szValue))
+                }
+            }
+        }
+    }
+    fclose(f)
 }
 
 public client_putinserver(id) {
@@ -184,14 +172,14 @@ public RG_Player_Damage_Post(iVictim, iInflictor, iAttacker, Float:fDamage, bits
 	#endif
 		return HC_CONTINUE
 
-	static const Float: iDamageCoords[][] = { {0.50, 0.40}, {0.56, 0.44}, {0.60, 0.50}, {0.56, 0.56}, {0.50, 0.60}, {0.44, 0.56}, {0.40, 0.50}, {0.44, 0.44} };
-	static iDamageCoordPos[MAX_CLIENTS + 1];
+	static const Float: iDamageCoords[][] = { {0.50, 0.40}, {0.56, 0.44}, {0.60, 0.50}, {0.56, 0.56}, {0.50, 0.60}, {0.44, 0.56}, {0.40, 0.50}, {0.44, 0.44} }
+	static iDamageCoordPos[MAX_CLIENTS + 1]
 
 	if(g_ePlayerSettings[iAttacker][bBulletDamage] && !(g_ePlayerSettings[iAttacker][bHeadshotMode] && get_member( iAttacker , m_LastHitGroup ) == HIT_HEAD)) {
 		set_hudmessage(random_num(0, 255), random_num(0, 255), random_num(0, 255), iDamageCoords[iDamageCoordPos[iAttacker]][0], iDamageCoords[iDamageCoordPos[iAttacker]][1], _, _, 1.0)
-		ShowSyncHudMsg(iAttacker, g_iHudSyncObj, "%.0f", fDamage);
+		ShowSyncHudMsg(iAttacker, g_iHudSyncObj, "%.0f", fDamage)
 
-		iDamageCoordPos[iAttacker] = (iDamageCoordPos[iAttacker] + 1) % sizeof(iDamageCoords);
+		iDamageCoordPos[iAttacker] = (iDamageCoordPos[iAttacker] + 1) % sizeof(iDamageCoords)
 	}
 	
 	return HC_CONTINUE
@@ -244,7 +232,7 @@ public RG_Player_Killed_Post(const iVictim, iAttacker, iGibs) {
 	}
 
 	if (g_ePlayerSettings[iAttacker][bHealing]) {
-		set_entvar(iAttacker, var_health, floatmin(Float:get_entvar(iAttacker, var_health) + (get_member(iVictim, m_bHeadshotKilled) ? g_iBonusHS : g_iBonusNormal), g_iBonusHP));
+		set_entvar(iAttacker, var_health, floatmin(Float:get_entvar(iAttacker, var_health) + (get_member(iVictim, m_bHeadshotKilled) ? g_eFileSettings[g_iBonusHS] : g_eFileSettings[g_iBonusNormal]), g_eFileSettings[g_iBonusHP]))
 	}
 
 	return HC_CONTINUE
@@ -261,9 +249,9 @@ public RG_Player_Spawn_Post(iEntity) {
 }
 
 public Clcmd_CSDM_Menu(id) {
-    new szTemp[128];
-    formatex(szTemp, charsmax(szTemp), "\w%L", LANG_PLAYER, "CSDM_SETTINGS_TITLE");
-    new menu = menu_create(szTemp, "settings_menu_handler");
+    new szTemp[128]
+    formatex(szTemp, charsmax(szTemp), "\w%L", LANG_PLAYER, "CSDM_SETTINGS_TITLE")
+    new menu = menu_create(szTemp, "settings_menu_handler")
 
     new settingLabels[][64] = {
         "CSDM_ONLY_HS",
@@ -272,28 +260,28 @@ public Clcmd_CSDM_Menu(id) {
         "CSDM_HEADSHOT_MSG",
         "CSDM_ALL_KILLS",
         "CSDM_BONUS_HP"
-    };
+    }
 
     for (new setting = 0; setting < sizeof(settingLabels); setting++) {
         formatex(szTemp, charsmax(szTemp), "\w%L %s", LANG_PLAYER, settingLabels[setting],
-            g_ePlayerSettings[id][setting] ? "\w[\yON\w]" : "\w[\rOFF\w]");
-        menu_additem(menu, szTemp);
+            g_ePlayerSettings[id][setting] ? "\w[\yON\w]" : "\w[\rOFF\w]")
+        menu_additem(menu, szTemp)
     }
 
-    menu_display(id, menu);
+    menu_display(id, menu)
 }
 
 public settings_menu_handler(id, menu, item) {
     if (item == MENU_EXIT || !is_user_connected(id)) {
-        return MenuExit(menu);
+        return MenuExit(menu)
     }
 
     if (item >= 0 && item < CsdmSettings) {
-        g_ePlayerSettings[id][item] = !g_ePlayerSettings[id][item];
-        Clcmd_CSDM_Menu(id);
+        g_ePlayerSettings[id][item] = !g_ePlayerSettings[id][item]
+        Clcmd_CSDM_Menu(id)
     }
 
-    return MenuExit(menu);
+    return MenuExit(menu)
 }
 
 public task_show_chat_ad(id) {
