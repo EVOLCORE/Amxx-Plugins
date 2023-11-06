@@ -325,6 +325,7 @@ client_print_team(const pPlayer, const szMessage[]) {
 
 @Task_Stop_Vote() {
 	new winningTeam = (g_iVotes[0] > g_iVotes[1]);
+	rg_swap_all_players();
 	set_pcvar_num(get_cvar_pointer("sv_restart"), 2);
 
 	new message[191];
