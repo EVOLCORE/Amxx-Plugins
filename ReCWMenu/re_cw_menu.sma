@@ -356,8 +356,8 @@ client_print_team(const pPlayer, const szMessage[]) {
 	}
 
 	if ((iTWin > 15 && iTWin - iCTWin >= 2) || (iCTWin > 15 && iCTWin - iTWin >= 2)) {
-		client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_%s_WIN", (iTWin > iCTWin) ? "TERRS" : "CTS");
-		show_dhudmessage(0, "%L", LANG_PLAYER, "CW_DHUD_ALL_%s_WIN", (iTWin > iCTWin) ? "TERRS" : "CTS");
+		client_print_color(0, 0, "%L", LANG_PLAYER, (iTWin > iCTWin) ? "CW_PRINT_ALL_TERRS_WIN" : "CW_PRINT_ALL_CTS_WIN");
+		show_dhudmessage(0, "%L", LANG_PLAYER, (iTWin > iCTWin) ? "CW_DHUD_ALL_TERRS_WIN" : "CW_DHUD_ALL_CTS_WIN");
 		set_pcvar_num(get_cvar_pointer("sv_restart"), 3);
 		@StartWarmup_Settings();
 		client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_MATCH_END");
