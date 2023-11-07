@@ -324,19 +324,16 @@ client_print_team(const pPlayer, const szMessage[]) {
 }
 
 @Task_Stop_Vote() {
-	new winningTeam = (g_iVotes[0] > g_iVotes[1]);
-	rg_swap_all_players();
-	set_pcvar_num(get_cvar_pointer("sv_restart"), 2);
+    new message[191];
+    formatex(message, sizeof(message), "%L", LANG_PLAYER, g_iVotes[0] > g_iVotes[1] ? (rg_swap_all_players(), "CW_PRINT_ALL_SWAP_TEAMS") : "CW_PRINT_ALL_NOT_SWAP_TEAMS");
+    client_print_color(0, 0, message);
+    set_pcvar_num(get_cvar_pointer("sv_restart"), 2);
 
-	new message[191];
-	formatex(message, sizeof(message), "%L", LANG_PLAYER, winningTeam ? "CW_PRINT_ALL_SWAP_TEAMS" : "CW_PRINT_ALL_NOT_SWAP_TEAMS");
-	client_print_color(0, 0, message);
-
-	DisableHookChain(g_iHC_AddPlayerItem_Pre);
-	DisableHookChain(g_iHC_RoundEnd_Pre);
-	EnableHookChain(g_iHC_RoundEnd_Post);
-	EnableHookChain(g_iHC_RestartRound_Post);
-	DisableHookChain(g_iHC_Spawn_Post);
+    DisableHookChain(g_iHC_AddPlayerItem_Pre);
+    DisableHookChain(g_iHC_RoundEnd_Pre);
+    EnableHookChain(g_iHC_RoundEnd_Post);
+    EnableHookChain(g_iHC_RestartRound_Post);
+    DisableHookChain(g_iHC_Spawn_Post);
 }
 
 @RoundEnd_Post(WinStatus:status, ScenarioEventEndRound:event, Float:tmDelay) {
