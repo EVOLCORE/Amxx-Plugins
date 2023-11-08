@@ -21,7 +21,7 @@ public plugin_init() {
 
 @CSGameRules_OnRoundFreezeEnd() {
     new message[191];
-    format(message, sizeof(message), "^4[Respect Gaming 2] [^1Round: ^3%d^1/^3%d ^1| Map: ^3%s ^1| ^1Nextmap: ^3%s ^1| ^1Players: ^3%i^1/^3%i^4]", g_iRound, maxrounds, szMapname, nextmap, get_playersnum(), get_member_game(m_nMaxPlayers));
+    formatex(message, sizeof(message), "^4[Respect Gaming 2] [^1Round: ^3%d^1/^3%d ^1| Map: ^3%s ^1| ^1Nextmap: ^3%s ^1| ^1Players: ^3%i^1/^3%i^4]", g_iRound, maxrounds, szMapname, nextmap, get_playersnum(), get_member_game(m_nMaxPlayers));
 
-    client_print_color(0, print_team_grey, message);
+    client_print_color(0, print_team_default, message);
 }
