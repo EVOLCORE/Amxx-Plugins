@@ -384,7 +384,7 @@ client_print_team(const pPlayer, const szMessage[]) {
             }
             rg_round_setup(pPlayer, false);
         }
-    } else if (iRound >= 32 && iRound % 2 == 0) {
+    } else if (iRound >= 32 && iRound <= 60 && iRound % 2 == 0) {
         rg_swap_all_players();
         client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_SWAP_TEAMS");
         for (new pPlayer = 1; pPlayer <= MaxClients; pPlayer++) {
