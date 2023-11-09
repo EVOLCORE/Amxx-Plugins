@@ -353,7 +353,7 @@ client_print_team(const pPlayer, const szMessage[]) {
 		return;
 	}
 
-	if ((iTWin > 15 && iTWin - iCTWin >= 2) || (iCTWin > 15 && iCTWin - iTWin >= 2)) {
+	if (abs(iTWin - iCTWin) >= 2 && max(iTWin, iCTWin) >= 15) {
 		client_print_color(0, 0, "%L", LANG_PLAYER, (iTWin > iCTWin) ? "CW_PRINT_ALL_TERRS_WIN" : "CW_PRINT_ALL_CTS_WIN");
 		show_dhudmessage(0, "%L", LANG_PLAYER, (iTWin > iCTWin) ? "CW_DHUD_ALL_TERRS_WIN" : "CW_DHUD_ALL_CTS_WIN");
 		set_pcvar_num(get_cvar_pointer("sv_restart"), 3);
@@ -384,7 +384,7 @@ client_print_team(const pPlayer, const szMessage[]) {
             }
             rg_round_setup(pPlayer, false);
         }
-    } else if (iRound >= 32 && iRound <= 60 && iRound % 2 == 0) {
+    } else if (iRound >= 32 && iRound % 2 == 0) {
         rg_swap_all_players();
         client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_SWAP_TEAMS");
         for (new pPlayer = 1; pPlayer <= MaxClients; pPlayer++) {
@@ -396,7 +396,7 @@ client_print_team(const pPlayer, const szMessage[]) {
     } else {
 		new teamPrintColor = (iCTWin > iTWin) ? print_team_blue : (iTWin > iCTWin) ? print_team_red : print_team_grey;
 		new message[191];
-		formatex(message, sizeof(message), (iCTWin > iTWin) ? "CW_PRINT_ALL_ROUNDSTART_CTWIN" : (iTWin > iCTWin) ? "CW_PRINT_ALL_ROUNDSTART_TWIN" : "CW_PRINT_ALL_ROUNDSTART_DRAW");
+		formatex(message, sizeof(message), "CW_PRINT_ALL_ROUNDSTART_%s", (iCTWin > iTWin) ? "CTWIN" : (iTWin > iCTWin) ? "TWIN" : "DRAW");
 		client_print_color(0, teamPrintColor, "%L", LANG_PLAYER, message, iTWin, iCTWin);
 	}
 }
