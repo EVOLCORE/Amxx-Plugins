@@ -4,10 +4,11 @@
 #include <amxmisc>
 #include <sqlx>
 
-new const Host[]        = "127.0.0.1";
-new const User[]        = "midnight";
-new const Pass[]        = "2233051337";
-new const Db[]          = "midnight";
+new const Host[]        = "85.90.246.115";
+new const User[]        = "gsboostm_boost";
+new const Pass[]        = "Nevermore223305";
+new const Db[]          = "gsboostm_boost";
+new const Table[]       = "cortex_bans";
 
 enum eLastBan {
     name[32],
@@ -31,7 +32,7 @@ new Array:g_iLastBanArray;
 new Handle:g_hSqlDbTuple;
 
 public plugin_init() {
-    register_plugin("Cortex Ban System", "0.0.1", "mIDnight");
+    register_plugin("Cortex Ban System", "0.0.2", "mIDnight");
 
     register_concmd("amx_pban", "@ConCmd_PBan", ADMIN_BAN, "<name, steamid, ip, #userid> <reason>");
     register_concmd("amx_ban", "@ConCmd_Ban", ADMIN_BAN, "<name, steamid, ip, #userid> <minutes> <reason>");
@@ -73,7 +74,7 @@ public client_putinserver(id) {
     }
 
     iData[0] = id;
-    formatex(szQuery, charsmax(szQuery), "SELECT * FROM cortex_bans WHERE authid = '%s' OR ip = '%s';", szAuthID, szIP);
+    formatex(szQuery, charsmax(szQuery), "SELECT * FROM %s WHERE authid = '%s' OR ip = '%s';", Table, szAuthID, szIP);
     SQL_ThreadQuery(g_hSqlDbTuple, "check_client_putinserver", szQuery, iData, sizeof(iData));
 }
 
@@ -113,7 +114,7 @@ public check_client_putinserver(iFailState, Handle:hQuery, szError[], iErrcode, 
     }
 
     new Handle:hQueries;
-    hQueries = SQL_PrepareQuery(hSQLConnection, "CREATE TABLE IF NOT EXISTS cortex_bans (name varchar(32) NOT NULL, authid varchar(32) NOT NULL PRIMARY KEY, ip varchar(32) NOT NULL, bantime INT(7) NOT NULL, unbantime varchar(32) NOT NULL, reason varchar(32) NOT NULL, adminname varchar(32) NOT NULL, adminauthid varchar(32));");
+    hQueries = SQL_PrepareQuery(hSQLConnection, "CREATE TABLE IF NOT EXISTS %s (name varchar(32) NOT NULL, authid varchar(32) NOT NULL PRIMARY KEY, ip varchar(32) NOT NULL, bantime INT(7) NOT NULL, unbantime varchar(32) NOT NULL, reason varchar(32) NOT NULL, adminname varchar(32) NOT NULL, adminauthid varchar(32));", Table);
 
     if(!SQL_Execute(hQueries)) {
         SQL_QueryError(hQueries, szError, charsmax(szError));
@@ -145,9 +146,9 @@ stock AddBan(const id, const target, const szName[], const szAuthID[], const szI
         console_print(target, "||| %L", target, "CONSOLE_IP", szIP);
         console_print(target, "||| %L", target, "CONSOLE_BY_ADMIN", id);
         console_print(target, "||| %L", target, "CONSOLE_REASON", szReason);
-        console_print(target, "||| %L", target, "CONSOLE_BAN_DATE", szDate);
         console_print(target, "||| %L", target, "CONSOLE_BAN_TIME", szBanTime);
-        console_print(target, "||| %L", target, "CONSOLE_EXPIRE_DATE", szUnBanTime);
+        console_print(target, "||| %L", target, "CONSOLE_UNBAN_TIME", szUnBanTime);
+        console_print(target, "||| %L", target, "CONSOLE_DATE", szDate);
         console_print(target, "------------------%L------------------", target, "CONSOLE_TAG");
 
         server_cmd("kick #%d ^"%L^"", get_user_userid(target), target, "KICK_YOU_ARE_BANNED_CHECK_CONSOLE");
@@ -165,7 +166,7 @@ stock AddBan(const id, const target, const szName[], const szAuthID[], const szI
     }
 
     new szQuery[1096];
-    formatex(szQuery, charsmax(szQuery), "INSERT INTO cortex_bans (name, authid, ip, bantime, unbantime, reason, adminname, adminauthid) VALUES ('%s', '%s', '%s', %i, '%s', '%s', '%s', '%s');", szName, szAuthID, szIP, iBanTime, szUnBanTime, szReason, szAdminName, szAdminAuthID);
+    formatex(szQuery, charsmax(szQuery), "INSERT INTO %s (name, authid, ip, bantime, unbantime, reason, adminname, adminauthid) VALUES ('%s', '%s', '%s', %i, '%s', '%s', '%s', '%s');", Table, szName, szAuthID, szIP, iBanTime, szUnBanTime, szReason, szAdminName, szAdminAuthID);
     SQL_ThreadQuery(g_hSqlDbTuple, "IgnoreHandle", szQuery);
 
     new szBanTime[32];
@@ -183,7 +184,7 @@ stock AddBan(const id, const target, const szName[], const szAuthID[], const szI
 stock RemoveBan(const id, const szArg[]) {
     new szQuery[1096];
 
-    formatex(szQuery, charsmax(szQuery), "DELETE FROM cortex_bans WHERE authid = '%s' OR ip = '%s';", szArg, szArg);
+    formatex(szQuery, charsmax(szQuery), "DELETE FROM %s WHERE authid = '%s' OR ip = '%s';", Table, szArg, szArg);
     SQL_ThreadQuery(g_hSqlDbTuple, "IgnoreHandle", szQuery);
 
     client_print_color(0, 0, "%L", LANG_PLAYER, "ADMIN_UNBANNED_PLAYER", id, szArg);
@@ -204,7 +205,7 @@ public IgnoreHandle(iFailState, Handle:hQuery, szError[], iErrcode, iData[], iDa
 @Task_Unban() {
     new szQuery[1096];
 
-    formatex(szQuery, charsmax(szQuery), "UPDATE cortex_bans SET bantime = bantime - 1 WHERE unbantime != 'PERMANENT';");
+    formatex(szQuery, charsmax(szQuery), "UPDATE %s SET bantime = bantime - 1 WHERE unbantime != 'PERMANENT';", Table);
     SQL_ThreadQuery(g_hSqlDbTuple, "check_client_bantime", szQuery);
 }
 
@@ -218,7 +219,7 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
 
     new szQuery[1096];
 
-    formatex(szQuery, charsmax(szQuery), "DELETE FROM cortex_bans WHERE bantime < 1 AND unbantime != 'PERMANENT';");
+    formatex(szQuery, charsmax(szQuery), "DELETE FROM %s WHERE bantime < 1 AND unbantime != 'PERMANENT';", Table);
     SQL_ThreadQuery(g_hSqlDbTuple, "IgnoreHandle", szQuery);
 }
 
@@ -250,7 +251,7 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
 }
 
 @ConCmd_Ban(const id, const level, const cid) {
-    if(!cmd_access(id, level, cid, 3)) {
+    if (!cmd_access(id, level, cid, 3)) {
         return PLUGIN_HANDLED;
     }
 
@@ -258,11 +259,11 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
     read_argv(1, szArg, charsmax(szArg));
     new iTarget = cmd_target(id, szArg, 9);
 
-    if(!iTarget) {
+    if (!iTarget) {
         return PLUGIN_HANDLED;
     }
 
-    new szDataExplode[5][32];
+    new szDataExplode[6][32];
 
     get_user_name(iTarget, szDataExplode[0], charsmax(szDataExplode[]));
     get_user_authid(iTarget, szDataExplode[1], charsmax(szDataExplode[]));
@@ -272,17 +273,25 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
 
     new iBanTime = str_to_num(szDataExplode[3]);
 
-    if(!iBanTime) {
+    if (!iBanTime) {
         iBanTime = -1;
-        formatex(szDataExplode[3], charsmax(szDataExplode[]), "PERMANENT");
-    }
-    else {
-        GenerateUnbanTime(iBanTime, szDataExplode[3], charsmax(szDataExplode[]));
+        formatex(szDataExplode[4], charsmax(szDataExplode[]), "PERMANENT");
+    } else {
+        GenerateUnbanTime(iBanTime, szDataExplode[4], charsmax(szDataExplode[]));
     }
 
-    read_argv(3, szDataExplode[4], charsmax(szDataExplode[]));
+    read_argv(3, szDataExplode[5], charsmax(szDataExplode[]));
 
-    AddBan(id, iTarget, szDataExplode[0], szDataExplode[1], szDataExplode[2], iBanTime, szDataExplode[3], szDataExplode[4], sizeof(szDataExplode[]));
+    g_eMenuBans[id][Target] = iTarget;
+    g_eMenuBans[id][TargetName] = szDataExplode[0];
+    g_eMenuBans[id][TargetAuthid] = szDataExplode[1];
+    g_eMenuBans[id][TargetIP] = szDataExplode[2];
+    g_eMenuBans[id][eBanTime] = iBanTime;
+    g_eMenuBans[id][UnBanTime] = szDataExplode[4];
+    g_eMenuBans[id][Reason] = szDataExplode[5];
+
+    AddBan(id, g_eMenuBans[id][Target], g_eMenuBans[id][TargetName], g_eMenuBans[id][TargetAuthid], g_eMenuBans[id][TargetIP], g_eMenuBans[id][eBanTime], g_eMenuBans[id][UnBanTime], g_eMenuBans[id][Reason], sizeof(g_eMenuBans[][Reason]));
+
     return PLUGIN_HANDLED;
 }
 
@@ -306,7 +315,7 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
     new iMenu = menu_create("Players for ban", "@ConCmd_BanMenu_Handler");
 
     for(new pPlayer = 1, szTeamName[32]; pPlayer <= MaxClients; pPlayer++) {
-        if(!is_user_connected(pPlayer) || is_user_bot(pPlayer) || get_user_flags(pPlayer) & ADMIN_IMMUNITY) {
+        if(!is_user_connected(pPlayer) || is_user_bot(pPlayer) /*|| get_user_flags(pPlayer) & ADMIN_IMMUNITY*/) {
             continue;
         }
 
@@ -493,7 +502,7 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
 
     new szQuery[1096];
 
-    formatex(szQuery, charsmax(szQuery), "DELETE FROM cortex_bans;");
+    formatex(szQuery, charsmax(szQuery), "DELETE FROM advantedbansystem;");
     SQL_ThreadQuery(g_hSqlDbTuple, "IgnoreHandle", szQuery);
     return PLUGIN_HANDLED;
 }
