@@ -10,7 +10,8 @@ CONSOLE_BY_ADMIN = By Admin: %n
 CONSOLE_REASON = Reason: %s
 CONSOLE_BAN_DATE = Ban Created : %s
 CONSOLE_BAN_TIME = For Length: %s
-CONSOLE_EXPIRE_DATE = Will Expire: %s
+CONSOLE_UNBAN_TIME = Will Expire: %s
+CONSOLE_DATE = Date: %s
 KICK_YOU_ARE_BANNED_CHECK_CONSOLE = You are banned from this server. Check your console.
 
 ADMIN_CLEAR_BANS = ^4[HW] ^1Admin ^4%n^1, has cleaned whole ban list.
