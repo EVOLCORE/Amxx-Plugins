@@ -4,10 +4,10 @@
 #include <amxmisc>
 #include <sqlx>
 
-new const Host[]        = "85.90.246.115";
-new const User[]        = "gsboostm_boost";
-new const Pass[]        = "Nevermore223305";
-new const Db[]          = "gsboostm_boost";
+new const Host[]        = "";
+new const User[]        = "";
+new const Pass[]        = "";
+new const Db[]          = "";
 new const Table[]       = "cortex_bans";
 
 enum eLastBan {
