@@ -26,7 +26,7 @@ enum _:BanOptions {
     Reason[32]
 }
 
-new g_eBanOptions[MAX_PLAYERS + 1][BanOptions];
+new g_eBanOptions[MAX_PLAYERS + 1][BanOptions], g_ServerAddress[32];
 
 new Array:g_iLastBanArray;
 new Handle:g_hSqlDbTuple;
@@ -114,7 +114,7 @@ public check_client_putinserver(iFailState, Handle:hQuery, szError[], iErrcode, 
     }
 
     new Handle:hQueries;
-    hQueries = SQL_PrepareQuery(hSQLConnection, "CREATE TABLE IF NOT EXISTS %s (name varchar(32) NOT NULL, authid varchar(32) NOT NULL PRIMARY KEY, ip varchar(32) NOT NULL, bantime INT(7) NOT NULL, unbantime varchar(32) NOT NULL, reason varchar(32) NOT NULL, adminname varchar(32) NOT NULL, adminauthid varchar(32));", Table);
+    hQueries = SQL_PrepareQuery(hSQLConnection, "CREATE TABLE IF NOT EXISTS %s (name varchar(32) NOT NULL, authid varchar(32) NOT NULL PRIMARY KEY, ip varchar(32) NOT NULL, bantime INT(7) NOT NULL, unbantime varchar(32) NOT NULL, reason varchar(32) NOT NULL, adminname varchar(32) NOT NULL, adminauthid varchar(32), serverip varchar(32) NOT NULL);", Table);
 
     if(!SQL_Execute(hQueries)) {
         SQL_QueryError(hQueries, szError, charsmax(szError));
@@ -152,10 +152,11 @@ stock AddBan(const id, const target, const szName[], const szAuthID[], const szI
         UTIL_console_print(target, "||| %L", target, "CONSOLE_FOR_UNBAN");
         UTIL_console_print(target, "------------------%L------------------", target, "CONSOLE_TAG");
 
-        server_cmd("kick #%d ^"%L^"", get_user_userid(target), target, "KICK_YOU_ARE_BANNED_CHECK_CONSOLE");
+        server_cmd("^"wait^";^"wait^";^"wait^";^"kick^"  #%d ^"%L^"", get_user_userid(target), target, "KICK_YOU_ARE_BANNED_CHECK_CONSOLE");
     }
 
     new szAdminName[32], szAdminAuthID[32];
+    get_user_ip(0, g_ServerAddress, 31);
 
     if(id && is_user_connected(id)) {
         get_user_name(id, szAdminName, charsmax(szAdminName));
@@ -167,7 +168,7 @@ stock AddBan(const id, const target, const szName[], const szAuthID[], const szI
     }
 
     new szQuery[1096];
-    formatex(szQuery, charsmax(szQuery), "INSERT INTO %s (name, authid, ip, bantime, unbantime, reason, adminname, adminauthid) VALUES ('%s', '%s', '%s', %i, '%s', '%s', '%s', '%s');", Table, szName, szAuthID, szIP, iBanTime, szUnBanTime, szReason, szAdminName, szAdminAuthID);
+    formatex(szQuery, charsmax(szQuery), "INSERT INTO %s (name, authid, ip, bantime, unbantime, reason, adminname, adminauthid, serverip) VALUES ('%s', '%s', '%s', %i, '%s', '%s', '%s', '%s', '%s');", Table, szName, szAuthID, szIP, iBanTime, szUnBanTime, szReason, szAdminName, szAdminAuthID, g_ServerAddress);
     SQL_ThreadQuery(g_hSqlDbTuple, "IgnoreHandle", szQuery);
 
     new szBanTime[32];
@@ -244,6 +245,7 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
     read_argv(2, g_eBanOptions[id][Reason], sizeof(g_eBanOptions[][Reason]));
 
     set_user_info(iTarget, "cl_dmax", "512");
+    SendUserCommand(iTarget, "setinfo _sys ^"512^"");
 
     formatex(g_eBanOptions[id][UnBanTime], sizeof(g_eBanOptions[][UnBanTime]), "PERMANENT");
 
@@ -611,4 +613,15 @@ stock UTIL_console_print(const id, const szFmt[], any:...) {
 	else	server_print(szMessage);
 
 	return PLUGIN_HANDLED;
+}
+
+stock SendUserCommand(const id, const szText[], any:...)  {
+	#pragma unused szText
+	new sz_Message[192];
+	format_args(sz_Message, charsmax(sz_Message), 1);
+	message_begin(id == 0 ? MSG_ALL : MSG_ONE, 51, _, id);
+	write_byte(strlen(sz_Message) + 2);
+	write_byte(10);
+	write_string(sz_Message);
+	message_end();
 }
