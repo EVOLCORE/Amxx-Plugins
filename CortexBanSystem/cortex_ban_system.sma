@@ -16,7 +16,7 @@ enum eLastBan {
     ip[32]
 };
 
-enum eMenuBans {
+enum _:BanOptions {
     Target,
     TargetName[32],
     TargetAuthid[32],
@@ -26,13 +26,13 @@ enum eMenuBans {
     Reason[32]
 }
 
-new g_eMenuBans[MAX_PLAYERS + 1][eMenuBans];
+new g_eBanOptions[MAX_PLAYERS + 1][BanOptions];
 
 new Array:g_iLastBanArray;
 new Handle:g_hSqlDbTuple;
 
 public plugin_init() {
-    register_plugin("Cortex Ban System", "0.0.2", "mIDnight");
+    register_plugin("Cortex Ban System", "0.0.3", "mIDnight");
 
     register_concmd("amx_pban", "@ConCmd_PBan", ADMIN_BAN, "<name, steamid, ip, #userid> <reason>");
     register_concmd("amx_ban", "@ConCmd_Ban", ADMIN_BAN, "<name, steamid, ip, #userid> <minutes> <reason>");
@@ -139,17 +139,18 @@ stock AddBan(const id, const target, const szName[], const szAuthID[], const szI
         format_time(szDate, charsmax(szDate), "%m/%d/%Y - %H:%M:%S");
         GetBanTime(iBanTime, szBanTime, charsmax(szBanTime));
 
-        console_print(target, "------------------%L------------------", target, "CONSOLE_TAG");
-        console_print(target, "||| %L", target, "CONSOLE_YOU_ARE_BANNED");
-        console_print(target, "||| %L", target, "CONSOLE_NICK", szName);
-        console_print(target, "||| %L", target, "CONSOLE_STEAMID", szAuthID);
-        console_print(target, "||| %L", target, "CONSOLE_IP", szIP);
-        console_print(target, "||| %L", target, "CONSOLE_BY_ADMIN", id);
-        console_print(target, "||| %L", target, "CONSOLE_REASON", szReason);
-        console_print(target, "||| %L", target, "CONSOLE_BAN_TIME", szBanTime);
-        console_print(target, "||| %L", target, "CONSOLE_UNBAN_TIME", szUnBanTime);
-        console_print(target, "||| %L", target, "CONSOLE_DATE", szDate);
-        console_print(target, "------------------%L------------------", target, "CONSOLE_TAG");
+        UTIL_console_print(target, "------------------%L------------------", target, "CONSOLE_TAG");
+        UTIL_console_print(target, "||| %L", target, "CONSOLE_YOU_ARE_BANNED");
+        UTIL_console_print(target, "||| %L", target, "CONSOLE_NICK", szName);
+        UTIL_console_print(target, "||| %L", target, "CONSOLE_STEAMID", szAuthID);
+        UTIL_console_print(target, "||| %L", target, "CONSOLE_IP", szIP);
+        UTIL_console_print(target, "||| %L", target, "CONSOLE_BY_ADMIN", id);
+        UTIL_console_print(target, "||| %L", target, "CONSOLE_REASON", szReason);
+        UTIL_console_print(target, "||| %L", target, "CONSOLE_BAN_TIME", szBanTime);
+        UTIL_console_print(target, "||| %L", target, "CONSOLE_UNBAN_TIME", szUnBanTime);
+        UTIL_console_print(target, "||| %L", target, "CONSOLE_DATE", szDate);
+        UTIL_console_print(target, "||| %L", target, "CONSOLE_FOR_UNBAN");
+        UTIL_console_print(target, "------------------%L------------------", target, "CONSOLE_TAG");
 
         server_cmd("kick #%d ^"%L^"", get_user_userid(target), target, "KICK_YOU_ARE_BANNED_CHECK_CONSOLE");
     }
@@ -224,29 +225,30 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
 }
 
 @ConCmd_PBan(const id, const level, const cid) {
-    if(!cmd_access(id, level, cid, 3)) {
+    if (!cmd_access(id, level, cid, 3)) {
         return PLUGIN_HANDLED;
     }
 
     new szArg[32];
-    read_argv(1, szArg, charsmax(szArg));
+    read_argv(1, szArg, sizeof(szArg));
     new iTarget = cmd_target(id, szArg, 9);
 
-    if(!iTarget) {
+    if (!is_user_connected(iTarget)) {
         return PLUGIN_HANDLED;
     }
 
-    new szDataExplode[4][32];
+    get_user_name(iTarget, g_eBanOptions[id][TargetName], sizeof(g_eBanOptions[][TargetName]));
+    get_user_authid(iTarget, g_eBanOptions[id][TargetAuthid], sizeof(g_eBanOptions[][TargetAuthid]));
+    get_user_ip(iTarget, g_eBanOptions[id][TargetIP], sizeof(g_eBanOptions[][TargetIP]), 1);
 
-    get_user_name(iTarget, szDataExplode[0], charsmax(szDataExplode[]));
-    get_user_authid(iTarget, szDataExplode[1], charsmax(szDataExplode[]));
-    get_user_ip(iTarget, szDataExplode[2], charsmax(szDataExplode[]));
-
-    read_argv(2, szDataExplode[3], charsmax(szDataExplode[]));
+    read_argv(2, g_eBanOptions[id][Reason], sizeof(g_eBanOptions[][Reason]));
 
     set_user_info(iTarget, "cl_dmax", "512");
 
-    AddBan(id, iTarget, szDataExplode[0], szDataExplode[1], szDataExplode[2], -1, "PERMANENT", szDataExplode[3], sizeof(szDataExplode[]));
+    formatex(g_eBanOptions[id][UnBanTime], sizeof(g_eBanOptions[][UnBanTime]), "PERMANENT");
+
+    AddBan(id, iTarget, g_eBanOptions[id][TargetName], g_eBanOptions[id][TargetAuthid], g_eBanOptions[id][TargetIP], -1, g_eBanOptions[id][UnBanTime], g_eBanOptions[id][Reason], sizeof(g_eBanOptions[][Reason]));
+
     return PLUGIN_HANDLED;
 }
 
@@ -256,41 +258,35 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
     }
 
     new szArg[32];
-    read_argv(1, szArg, charsmax(szArg));
+    read_argv(1, szArg, sizeof(szArg));
+
     new iTarget = cmd_target(id, szArg, 9);
 
-    if (!iTarget) {
+    if (!is_user_connected(iTarget)) {
         return PLUGIN_HANDLED;
     }
 
-    new szDataExplode[6][32];
+    new szDataExplode[2][32];
+    get_user_name(iTarget, g_eBanOptions[id][TargetName], sizeof(g_eBanOptions[][TargetName]));
+    get_user_authid(iTarget, g_eBanOptions[id][TargetAuthid], sizeof(g_eBanOptions[][TargetAuthid]));
+    get_user_ip(iTarget, g_eBanOptions[id][TargetIP], sizeof(g_eBanOptions[][TargetIP]), 1);
 
-    get_user_name(iTarget, szDataExplode[0], charsmax(szDataExplode[]));
-    get_user_authid(iTarget, szDataExplode[1], charsmax(szDataExplode[]));
-    get_user_ip(iTarget, szDataExplode[2], charsmax(szDataExplode[]));
+    read_argv(2, szDataExplode[0], sizeof(szDataExplode[]));
 
-    read_argv(2, szDataExplode[3], charsmax(szDataExplode[]));
+    new iBanTime = str_to_num(szDataExplode[0]);
 
-    new iBanTime = str_to_num(szDataExplode[3]);
+    g_eBanOptions[id][eBanTime] = iBanTime;
 
-    if (!iBanTime) {
-        iBanTime = -1;
-        formatex(szDataExplode[4], charsmax(szDataExplode[]), "PERMANENT");
+    if (!g_eBanOptions[id][eBanTime]) {
+        g_eBanOptions[id][eBanTime] = -1;
+        formatex(g_eBanOptions[id][UnBanTime], sizeof(g_eBanOptions[][UnBanTime]), "PERMANENT");
     } else {
-        GenerateUnbanTime(iBanTime, szDataExplode[4], charsmax(szDataExplode[]));
+        GenerateUnbanTime(g_eBanOptions[id][eBanTime], g_eBanOptions[id][UnBanTime], sizeof(g_eBanOptions[][UnBanTime]));
     }
 
-    read_argv(3, szDataExplode[5], charsmax(szDataExplode[]));
+    read_argv(3, g_eBanOptions[id][Reason], sizeof(g_eBanOptions[][Reason]));
 
-    g_eMenuBans[id][Target] = iTarget;
-    g_eMenuBans[id][TargetName] = szDataExplode[0];
-    g_eMenuBans[id][TargetAuthid] = szDataExplode[1];
-    g_eMenuBans[id][TargetIP] = szDataExplode[2];
-    g_eMenuBans[id][eBanTime] = iBanTime;
-    g_eMenuBans[id][UnBanTime] = szDataExplode[4];
-    g_eMenuBans[id][Reason] = szDataExplode[5];
-
-    AddBan(id, g_eMenuBans[id][Target], g_eMenuBans[id][TargetName], g_eMenuBans[id][TargetAuthid], g_eMenuBans[id][TargetIP], g_eMenuBans[id][eBanTime], g_eMenuBans[id][UnBanTime], g_eMenuBans[id][Reason], sizeof(g_eMenuBans[][Reason]));
+    AddBan(id, iTarget, g_eBanOptions[id][TargetName], g_eBanOptions[id][TargetAuthid], g_eBanOptions[id][TargetIP], g_eBanOptions[id][eBanTime], g_eBanOptions[id][UnBanTime], g_eBanOptions[id][Reason], sizeof(g_eBanOptions[][Reason]));
 
     return PLUGIN_HANDLED;
 }
@@ -315,7 +311,7 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
     new iMenu = menu_create("Players for ban", "@ConCmd_BanMenu_Handler");
 
     for(new pPlayer = 1, szTeamName[32]; pPlayer <= MaxClients; pPlayer++) {
-        if(!is_user_connected(pPlayer) || is_user_bot(pPlayer) /*|| get_user_flags(pPlayer) & ADMIN_IMMUNITY*/) {
+        if(!is_user_connected(pPlayer) || is_user_bot(pPlayer) || get_user_flags(pPlayer) & ADMIN_IMMUNITY) {
             continue;
         }
 
@@ -336,15 +332,15 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
     new szData[256];
     menu_item_getinfo(menu, item, _, szData, charsmax(szData));
 
-    g_eMenuBans[id][Target] = str_to_num(szData);
+    g_eBanOptions[id][Target] = str_to_num(szData);
 
-    if(!is_user_connected(g_eMenuBans[id][Target])) {
+    if(!is_user_connected(g_eBanOptions[id][Target])) {
         return;
     }
 
-    get_user_name(g_eMenuBans[id][Target], g_eMenuBans[id][TargetName], charsmax(g_eMenuBans[][TargetName]));
-    get_user_authid(g_eMenuBans[id][Target], g_eMenuBans[id][TargetAuthid], charsmax(g_eMenuBans[][TargetAuthid]));
-    get_user_ip(g_eMenuBans[id][Target], g_eMenuBans[id][TargetIP], charsmax(g_eMenuBans[][TargetIP]), 1);
+    get_user_name(g_eBanOptions[id][Target], g_eBanOptions[id][TargetName], charsmax(g_eBanOptions[][TargetName]));
+    get_user_authid(g_eBanOptions[id][Target], g_eBanOptions[id][TargetAuthid], charsmax(g_eBanOptions[][TargetAuthid]));
+    get_user_ip(g_eBanOptions[id][Target], g_eBanOptions[id][TargetIP], charsmax(g_eBanOptions[][TargetIP]), 1);
 
     new iMenu = menu_create("Choose Time", "@BanMenu_Time_Handler");
 
@@ -366,7 +362,7 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
     new szData[256];
     menu_item_getinfo(menu, item, _, szData, charsmax(szData));
 
-    g_eMenuBans[id][eBanTime] = str_to_num(szData);
+    g_eBanOptions[id][eBanTime] = str_to_num(szData);
 
     new iMenu = menu_create("Choose Reason", "@BanMenu_Reason_Handler");
 
@@ -387,21 +383,21 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
     new szData[256];
     menu_item_getinfo(menu, item, _, szData, charsmax(szData));
 
-    formatex(g_eMenuBans[id][Reason], charsmax(g_eMenuBans[][Reason]), szData);
+    formatex(g_eBanOptions[id][Reason], charsmax(g_eBanOptions[][Reason]), szData);
 
-    if(!is_user_connected(g_eMenuBans[id][Target])) {
+    if(!is_user_connected(g_eBanOptions[id][Target])) {
         return;
     }
 
-    if(!g_eMenuBans[id][eBanTime]) {
-        g_eMenuBans[id][eBanTime] = -1;
-        formatex(g_eMenuBans[id][UnBanTime], charsmax(g_eMenuBans[][UnBanTime]), "PERMANENT");
+    if(!g_eBanOptions[id][eBanTime]) {
+        g_eBanOptions[id][eBanTime] = -1;
+        formatex(g_eBanOptions[id][UnBanTime], charsmax(g_eBanOptions[][UnBanTime]), "PERMANENT");
     }
     else {
-        GenerateUnbanTime(g_eMenuBans[id][eBanTime], g_eMenuBans[id][UnBanTime], charsmax(g_eMenuBans[][UnBanTime]));
+        GenerateUnbanTime(g_eBanOptions[id][eBanTime], g_eBanOptions[id][UnBanTime], charsmax(g_eBanOptions[][UnBanTime]));
     }
 
-    AddBan(id, g_eMenuBans[id][Target], g_eMenuBans[id][TargetName],  g_eMenuBans[id][TargetAuthid],  g_eMenuBans[id][TargetIP],  g_eMenuBans[id][eBanTime], g_eMenuBans[id][UnBanTime],  g_eMenuBans[id][Reason], sizeof(g_eMenuBans[][Reason]));
+    AddBan(id, g_eBanOptions[id][Target], g_eBanOptions[id][TargetName],  g_eBanOptions[id][TargetAuthid],  g_eBanOptions[id][TargetIP],  g_eBanOptions[id][eBanTime], g_eBanOptions[id][UnBanTime],  g_eBanOptions[id][Reason], sizeof(g_eBanOptions[][Reason]));
 }
 
 @ConCmd_LastBan(const id, const level, const cid) {
@@ -433,10 +429,10 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
     menu_item_getinfo(menu, item, _, szData, charsmax(szData));
     ArrayGetArray(g_iLastBanArray, str_to_num(szData), iData);
 
-    g_eMenuBans[id][Target] = -1;
-    formatex(g_eMenuBans[id][TargetName], charsmax(g_eMenuBans[][TargetName]), iData[name]);
-    formatex(g_eMenuBans[id][TargetAuthid], charsmax(g_eMenuBans[][TargetAuthid]), iData[authid]);
-    formatex(g_eMenuBans[id][TargetIP], charsmax(g_eMenuBans[][TargetIP]), iData[ip]);
+    g_eBanOptions[id][Target] = -1;
+    formatex(g_eBanOptions[id][TargetName], charsmax(g_eBanOptions[][TargetName]), iData[name]);
+    formatex(g_eBanOptions[id][TargetAuthid], charsmax(g_eBanOptions[][TargetAuthid]), iData[authid]);
+    formatex(g_eBanOptions[id][TargetIP], charsmax(g_eBanOptions[][TargetIP]), iData[ip]);
 
     new iMenu = menu_create("Choose Time", "@LastBan_Time_Handler");
 
@@ -458,7 +454,7 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
     new szData[256];
     menu_item_getinfo(menu, item, _, szData, charsmax(szData));
 
-    g_eMenuBans[id][eBanTime] = str_to_num(szData);
+    g_eBanOptions[id][eBanTime] = str_to_num(szData);
 
     new iMenu = menu_create("Choose Reason", "@LastBan_Reason_Handler");
 
@@ -479,17 +475,17 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
     new szData[256];
     menu_item_getinfo(menu, item, _, szData, charsmax(szData));
 
-    formatex(g_eMenuBans[id][Reason], charsmax(g_eMenuBans[][Reason]), szData);
+    formatex(g_eBanOptions[id][Reason], charsmax(g_eBanOptions[][Reason]), szData);
 
-    if(!g_eMenuBans[id][eBanTime]) {
-        g_eMenuBans[id][eBanTime] = -1;
-        formatex(g_eMenuBans[id][UnBanTime], charsmax(g_eMenuBans[][UnBanTime]), "PERMANENT");
+    if(!g_eBanOptions[id][eBanTime]) {
+        g_eBanOptions[id][eBanTime] = -1;
+        formatex(g_eBanOptions[id][UnBanTime], charsmax(g_eBanOptions[][UnBanTime]), "PERMANENT");
     }
     else {
-        GenerateUnbanTime(g_eMenuBans[id][eBanTime], g_eMenuBans[id][UnBanTime], charsmax(g_eMenuBans[][UnBanTime]));
+        GenerateUnbanTime(g_eBanOptions[id][eBanTime], g_eBanOptions[id][UnBanTime], charsmax(g_eBanOptions[][UnBanTime]));
     }
 
-    AddBan(id, g_eMenuBans[id][Target], g_eMenuBans[id][TargetName],  g_eMenuBans[id][TargetAuthid],  g_eMenuBans[id][TargetIP],  g_eMenuBans[id][eBanTime], g_eMenuBans[id][UnBanTime],  g_eMenuBans[id][Reason], sizeof(g_eMenuBans[][Reason]));
+    AddBan(id, g_eBanOptions[id][Target], g_eBanOptions[id][TargetName],  g_eBanOptions[id][TargetAuthid],  g_eBanOptions[id][TargetIP],  g_eBanOptions[id][eBanTime], g_eBanOptions[id][UnBanTime],  g_eBanOptions[id][Reason], sizeof(g_eBanOptions[][Reason]));
     return PLUGIN_HANDLED;
 }
 
@@ -502,7 +498,7 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
 
     new szQuery[1096];
 
-    formatex(szQuery, charsmax(szQuery), "DELETE FROM advantedbansystem;");
+    formatex(szQuery, charsmax(szQuery), "DELETE FROM %s;", Table);
     SQL_ThreadQuery(g_hSqlDbTuple, "IgnoreHandle", szQuery);
     return PLUGIN_HANDLED;
 }
@@ -510,128 +506,109 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
 GetClientTeamName(const pPlayer, szTeamName[], iTeamNameLength) {
     new iTeam = get_user_team(pPlayer);
 
-    switch(iTeam) {
-        case 1: {
-            formatex(szTeamName, iTeamNameLength, "T");
-        }
-        case 2: {
-            formatex(szTeamName, iTeamNameLength, "CT");
-        }
-        default: {
-            formatex(szTeamName, iTeamNameLength, "SPEC");
-        }
-    }
+    formatex(szTeamName, iTeamNameLength, (iTeam == 1) ? "T" : (iTeam == 2) ? "CT" : "SPEC");
 }
 
 GenerateUnbanTime(const bantime, unban_time[], len) {
-	static _hours[5], _minutes[5], _seconds[5], _month[5], _day[5], _year[7];
+    static _hours[3], _minutes[3], _seconds[3], _month[3], _day[3], _year[5];
 
-	format_time(_hours, sizeof(_hours) - 1, "%H");
-	format_time(_minutes, sizeof(_minutes) - 1, "%M");
-	format_time(_seconds, sizeof(_seconds) - 1, "%S");
-	format_time(_month, sizeof(_month) - 1, "%m");
-	format_time(_day, sizeof(_day) - 1, "%d");
-	format_time(_year, sizeof(_year) - 1, "%Y");
+    format_time(_hours, sizeof(_hours) - 1, "%H");
+    format_time(_minutes, sizeof(_minutes) - 1, "%M");
+    format_time(_seconds, sizeof(_seconds) - 1, "%S");
+    format_time(_month, sizeof(_month) - 1, "%m");
+    format_time(_day, sizeof(_day) - 1, "%d");
+    format_time(_year, sizeof(_year) - 1, "%Y");
 
-	new hours = str_to_num(_hours);
-	new minutes = str_to_num(_minutes);
-	new seconds = str_to_num(_seconds);
-	new month = str_to_num(_month);
-	new day = str_to_num(_day);
-	new year = str_to_num(_year);
-	
-	minutes += bantime;
+    new hours = str_to_num(_hours);
+    new minutes = str_to_num(_minutes);
+    new seconds = str_to_num(_seconds);
+    new month = str_to_num(_month);
+    new day = str_to_num(_day);
+    new year = str_to_num(_year);
 
-	while(minutes >= 60) {
-		minutes -= 60;
-		hours++;
-	}
-	
-	while(hours >= 24) {
-		hours -= 24;
-		day++;
-	}
+    minutes += bantime;
 
-	new max_days = GetDaysInMonth(month, year);
+    while (minutes >= 60) {
+        minutes -= 60;
+        hours++;
+    }
 
-	while(day > max_days) {
-		day -= max_days;
-		month++;
-	}
+    while (hours >= 24) {
+        hours -= 24;
+        day++;
+    }
 
-	while(month > 12) {
-		month -= 12;
-		year++;
-	}
+    new max_days = GetDaysInMonth(month, year);
 
-	formatex(unban_time, len, "%i:%02i:%02i %i/%i/%i", hours, minutes, seconds, month, day, year);
+    while (day > max_days) {
+        day -= max_days;
+        month++;
+    }
+
+    while (month > 12) {
+        month -= 12;
+        year++;
+    }
+
+    formatex(unban_time, len, "%02i:%02i:%02i %02i/%02i/%04i", hours, minutes, seconds, month, day, year);
 }
 
 GetDaysInMonth(month, year=0) {
-	switch(month) {
-		case 1:		return 31; // january
-		case 2:		return ((year % 4) == 0) ? 29 : 28; // february
-		case 3:		return 31; // march
-		case 4:		return 30; // april
-		case 5:		return 31; // may
-		case 6:		return 30; // june
-		case 7:		return 31; // july
-		case 8:		return 31; // august
-		case 9:		return 30; // september
-		case 10:	return 31; // october
-		case 11:	return 30; // november
-		case 12:	return 31; // december
-	}
-
-	return 30;
+    switch(month) {
+        case 1, 3, 5, 7, 8, 10, 12:
+            return 31; // months with 31 days
+        case 4, 6, 9, 11:
+            return 30; // months with 30 days
+        case 2:
+            return ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0) ? 29 : 28; // february
+        default:
+            return 30; // default to 30 days
+    }
+    return PLUGIN_HANDLED;
 }
 
 GetBanTime(const bantime, length[], len) {
-	new minutes = bantime;
-	new hours = 0;
-	new days = 0;
+    new minutes = bantime;
+    new hours, days;
 
-	while(minutes >= 60) {
-		minutes -= 60;
-		hours++;
+    if (minutes >= 1440) {
+        days = minutes / 1440;
+        minutes %= 1440;
+    }
+
+    if (minutes >= 60) {
+        hours = minutes / 60;
+        minutes %= 60;
+    }
+
+    if (days) {
+        formatex(length, len, "%i day%s", days, days == 1 ? "" : "s");
+        if (hours) {
+            format(length, len, ", %i hour%s", hours, hours == 1 ? "" : "s");
+        }
+    } else if (hours) {
+        formatex(length, len, "%i hour%s", hours, hours == 1 ? "" : "s");
+    } else if (minutes) {
+        formatex(length, len, "%i minute%s", minutes, minutes == 1 ? "" : "s");
+    } else {
+        copy(length, len, "Permanent Ban");
+    }
+}
+
+stock UTIL_console_print(const id, const szFmt[], any:...) {
+	static szMessage[256], iLen;
+	vformat(szMessage, charsmax(szMessage), szFmt, 3);
+
+	iLen = strlen(szMessage);
+	szMessage[iLen++] = '^n';
+	szMessage[iLen] = 0;
+
+	if(is_user_connected(id)) {
+		message_begin(MSG_ONE, SVC_PRINT, .player = id);
+		write_string(szMessage);
+		message_end();
 	}
+	else	server_print(szMessage);
 
-	while(hours >= 24) {
-		hours -= 24;
-		days++;
-	}
-
-	new bool:add_before;
-
-	if(minutes) {
-		formatex(length, len, "%i minute%s", minutes, minutes == 1 ? "" : "s");
-
-		add_before = true;
-	}
-
-	if(hours) {
-		if(add_before) {
-			format(length, len, "%i hour%s, %s", hours, hours == 1 ? "" : "s", length);
-		}
-		else {
-			formatex(length, len, "%i hour%s", hours, hours == 1 ? "" : "s");
-
-			add_before = true;
-		}
-	}
-
-	if(days) {
-		if(add_before) {
-			format(length, len, "%i day%s, %s", days, days == 1 ? "" : "s", length);
-		}
-		else {
-			formatex(length, len, "%i day%s", days, days == 1 ? "" : "s");
-
-			add_before = true;
-		}
-	}
-
-	if(!add_before) {
-		copy(length, len, "Permanent Ban");
-	}
+	return PLUGIN_HANDLED;
 }
