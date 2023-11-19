@@ -36,6 +36,7 @@ public plugin_init() {
 
     register_concmd("amx_pban", "@ConCmd_PBan", ADMIN_BAN, "<name, steamid, ip, #userid> <reason>");
     register_concmd("amx_ban", "@ConCmd_Ban", ADMIN_BAN, "<name, steamid, ip, #userid> <minutes> <reason>");
+    register_concmd("amx_addban", "@ConCmd_AddBan", ADMIN_BAN, "<steamid> <ip> <reason>");
     register_concmd("amx_unban", "@ConCmd_UnBan", ADMIN_BAN, "<steamid, ip>");
     register_concmd("amx_banmenu", "@ConCmd_BanMenu", ADMIN_BAN, "Opens ban menu");
     register_concmd("amx_lastban", "@ConCmd_LastBan", ADMIN_BAN, "Opens lastban menu");
@@ -114,7 +115,7 @@ public check_client_putinserver(iFailState, Handle:hQuery, szError[], iErrcode, 
     }
 
     new Handle:hQueries;
-    hQueries = SQL_PrepareQuery(hSQLConnection, "CREATE TABLE IF NOT EXISTS %s (name varchar(32) NOT NULL, authid varchar(32) NOT NULL PRIMARY KEY, ip varchar(32) NOT NULL, bantime INT(7) NOT NULL, unbantime varchar(32) NOT NULL, reason varchar(32) NOT NULL, adminname varchar(32) NOT NULL, adminauthid varchar(32), serverip varchar(32) NOT NULL);", Table);
+    hQueries = SQL_PrepareQuery(hSQLConnection, "CREATE TABLE IF NOT EXISTS %s (name varchar(32) NOT NULL, authid varchar(32) NOT NULL PRIMARY KEY, ip varchar(32) NOT NULL, bantime INT(7) NOT NULL, unbantime varchar(32) NOT NULL, reason varchar(120) NOT NULL, adminname varchar(32) NOT NULL, adminauthid varchar(32), serverip varchar(32) NOT NULL);", Table);
 
     if(!SQL_Execute(hQueries)) {
         SQL_QueryError(hQueries, szError, charsmax(szError));
@@ -289,6 +290,37 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
     read_argv(3, g_eBanOptions[id][Reason], sizeof(g_eBanOptions[][Reason]));
 
     AddBan(id, iTarget, g_eBanOptions[id][TargetName], g_eBanOptions[id][TargetAuthid], g_eBanOptions[id][TargetIP], g_eBanOptions[id][eBanTime], g_eBanOptions[id][UnBanTime], g_eBanOptions[id][Reason], sizeof(g_eBanOptions[][Reason]));
+
+    return PLUGIN_HANDLED;
+}
+
+@ConCmd_AddBan(const id, const level, const cid) {
+    if (!cmd_access(id, level, cid, 3)) {
+        return PLUGIN_HANDLED;
+    }
+
+    new szAdminName[32], szAdminAuthID[32];
+    get_user_ip(0, g_ServerAddress, 31);
+
+    if(id && is_user_connected(id)) {
+        get_user_name(id, szAdminName, charsmax(szAdminName));
+        get_user_authid(id, szAdminAuthID, charsmax(szAdminAuthID));
+    }
+    else {
+        formatex(szAdminName, charsmax(szAdminName), "PANEL");
+        formatex(szAdminAuthID, charsmax(szAdminAuthID), "PANEL");
+    }
+
+    new szDataExplode[4][32];
+    formatex(szDataExplode[0], charsmax(szDataExplode[]), "OfflineBan");
+    read_argv(1, szDataExplode[1], charsmax(szDataExplode[]));
+    read_argv(2, szDataExplode[2], charsmax(szDataExplode[]));
+    read_argv(3, szDataExplode[3], charsmax(szDataExplode[]));
+
+    new szQuery[1096];
+    formatex(szQuery, charsmax(szQuery), "INSERT INTO %s (name, authid, ip, bantime, unbantime, reason, adminname, adminauthid, serverip) VALUES ('%s', '%s', '%s', '-1', 'PERMANENT', '%s', '%s', '%s', '%s');", Table, szDataExplode[0], szDataExplode[1], szDataExplode[2], szDataExplode[3], szAdminName, szAdminAuthID, g_ServerAddress);
+
+    SQL_ThreadQuery(g_hSqlDbTuple, "IgnoreHandle", szQuery);
 
     return PLUGIN_HANDLED;
 }
@@ -511,88 +543,28 @@ GetClientTeamName(const pPlayer, szTeamName[], iTeamNameLength) {
     formatex(szTeamName, iTeamNameLength, (iTeam == 1) ? "T" : (iTeam == 2) ? "CT" : "SPEC");
 }
 
-GenerateUnbanTime(const bantime, unban_time[], len) {
-    static _hours[3], _minutes[3], _seconds[3], _month[3], _day[3], _year[5];
-
-    format_time(_hours, sizeof(_hours) - 1, "%H");
-    format_time(_minutes, sizeof(_minutes) - 1, "%M");
-    format_time(_seconds, sizeof(_seconds) - 1, "%S");
-    format_time(_month, sizeof(_month) - 1, "%m");
-    format_time(_day, sizeof(_day) - 1, "%d");
-    format_time(_year, sizeof(_year) - 1, "%Y");
-
-    new hours = str_to_num(_hours);
-    new minutes = str_to_num(_minutes);
-    new seconds = str_to_num(_seconds);
-    new month = str_to_num(_month);
-    new day = str_to_num(_day);
-    new year = str_to_num(_year);
-
-    minutes += bantime;
-
-    while (minutes >= 60) {
-        minutes -= 60;
-        hours++;
-    }
-
-    while (hours >= 24) {
-        hours -= 24;
-        day++;
-    }
-
-    new max_days = GetDaysInMonth(month, year);
-
-    while (day > max_days) {
-        day -= max_days;
-        month++;
-    }
-
-    while (month > 12) {
-        month -= 12;
-        year++;
-    }
-
+stock GenerateUnbanTime(const bantime, unban_time[], len) {
+    new hours, minutes, seconds, month, day, year;
     formatex(unban_time, len, "%02i:%02i:%02i %02i/%02i/%04i", hours, minutes, seconds, month, day, year);
-}
-
-GetDaysInMonth(month, year=0) {
-    switch(month) {
-        case 1, 3, 5, 7, 8, 10, 12:
-            return 31; // months with 31 days
-        case 4, 6, 9, 11:
-            return 30; // months with 30 days
-        case 2:
-            return ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0) ? 29 : 28; // february
-        default:
-            return 30; // default to 30 days
-    }
-    return PLUGIN_HANDLED;
+    
+    format_time(unban_time, len, "%H:%M:%S %m/%d/%Y", get_systime() + (bantime * 60));
 }
 
 GetBanTime(const bantime, length[], len) {
-    new minutes = bantime;
-    new hours, days;
-
-    if (minutes >= 1440) {
-        days = minutes / 1440;
-        minutes %= 1440;
-    }
-
-    if (minutes >= 60) {
-        hours = minutes / 60;
-        minutes %= 60;
-    }
+    new days = bantime / 1440;
+    new hours = (bantime / 60) % 24;
+    new minutes = bantime % 60;
 
     if (days) {
         formatex(length, len, "%i day%s", days, days == 1 ? "" : "s");
-        if (hours) {
-            format(length, len, ", %i hour%s", hours, hours == 1 ? "" : "s");
-        }
-    } else if (hours) {
-        formatex(length, len, "%i hour%s", hours, hours == 1 ? "" : "s");
-    } else if (minutes) {
-        formatex(length, len, "%i minute%s", minutes, minutes == 1 ? "" : "s");
-    } else {
+    }
+    if (hours) {
+        formatex(length, len, "%s%s%i hour%s", length, days ? ", " : "", hours, hours == 1 ? "" : "s");
+    }
+    if (minutes) {
+        formatex(length, len, "%s%s%i minute%s", length, (days || hours) ? ", " : "", minutes, minutes == 1 ? "" : "s");
+    }
+    if (bantime == -1 || (!days && !hours && !minutes)) {
         copy(length, len, "Permanent Ban");
     }
 }
