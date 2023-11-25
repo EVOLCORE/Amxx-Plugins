@@ -197,14 +197,6 @@ bool:GagTermsOfUse(const id, const pPlayer, bool:blFlags, bool:blPlayer, bool:bl
 	}
 }
 
-@CSGameRules_CanPlayerHearPlayer_Pre(const listener, const sender) {
-	if(g_int[iGagTime][sender] > 0) {
-		SetHookChainReturn(ATYPE_BOOL, false);
-		return HC_SUPERCEDE;
-	}
-	return HC_CONTINUE;
-}
-
 @CBasePlayer_SetClientUserInfoName(const id, const iBuffer, const szNewName[]) {
 	if(g_int[iGagTime][id] > 0) {
 		client_print_color(id, print_team_default, "%L", LANG_PLAYER, "GAG_NO_NAME_CHANGE", szChatTag); 
@@ -214,7 +206,7 @@ bool:GagTermsOfUse(const id, const pPlayer, bool:blFlags, bool:blPlayer, bool:bl
 	return HC_CONTINUE;
 }
 
-@CSGameRules_CanPlayerHearPlayer(const listener, const sender) {
+@CSGameRules_CanPlayerHearPlayer_Pre(const listener, const sender) {
 	if(g_int[iGagTime][sender] > 0) {
 		client_print_color(sender, print_team_default, "%L", LANG_PLAYER, "GAG_PLAYER_HAS_GAG", szChatTag, g_int[iGagTime][sender]);
 		SetHookChainReturn(ATYPE_BOOL, false);
