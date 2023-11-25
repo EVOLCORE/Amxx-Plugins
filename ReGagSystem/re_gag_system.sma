@@ -30,6 +30,7 @@ public plugin_init() {
 
 	RegisterHookChain(RG_CSGameRules_CanPlayerHearPlayer, "@CSGameRules_CanPlayerHearPlayer_Pre", .post = false);
 	RegisterHookChain(RG_CBasePlayer_SetClientUserInfoName, "@CBasePlayer_SetClientUserInfoName");
+	RegisterHookChain(RG_CSGameRules_CanPlayerHearPlayer, "@CSGameRules_CanPlayerHearPlayer_Pre", .post = false);
 }
 
 @clcmd_say(const id) {
@@ -192,7 +193,7 @@ bool:GagTermsOfUse(const id, const pPlayer, bool:blFlags, bool:blPlayer, bool:bl
 		g_int[iGagTime][id] = 0;
 		remove_task(id);
 
-		client_print_color(0, print_team_red, "%L", LANG_PLAYER, "GAG_TIMEEND", szChatTag, id);
+		client_print_color(0, print_team_default, "%L", LANG_PLAYER, "GAG_TIMEEND", szChatTag, id);
 	}
 }
 
@@ -206,8 +207,17 @@ bool:GagTermsOfUse(const id, const pPlayer, bool:blFlags, bool:blPlayer, bool:bl
 
 @CBasePlayer_SetClientUserInfoName(const id, const iBuffer, const szNewName[]) {
 	if(g_int[iGagTime][id] > 0) {
-		client_print_color(id, print_team_red, "%L", LANG_PLAYER, "GAG_NO_NAME_CHANGE", szChatTag); 
+		client_print_color(id, print_team_default, "%L", LANG_PLAYER, "GAG_NO_NAME_CHANGE", szChatTag); 
 		SetHookChainReturn(ATYPE_BOOL, 0);
+		return HC_SUPERCEDE;
+	}
+	return HC_CONTINUE;
+}
+
+@CSGameRules_CanPlayerHearPlayer(const listener, const sender) {
+	if(g_int[iGagTime][sender] > 0) {
+		client_print_color(sender, print_team_default, "%L", LANG_PLAYER, "GAG_PLAYER_HAS_GAG", szChatTag, g_int[iGagTime][sender]);
+		SetHookChainReturn(ATYPE_BOOL, false);
 		return HC_SUPERCEDE;
 	}
 	return HC_CONTINUE;
