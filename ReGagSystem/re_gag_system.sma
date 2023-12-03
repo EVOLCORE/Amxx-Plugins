@@ -4,16 +4,16 @@
 #include <reapi>
 #include <nvault>
 
-#define ADMIN_GAG    ADMIN_KICK  // Authorized player to gag.
-#define DEFAULT_GAG_TIME   120     //default time gag example amx_gag mIDnight and it will auto gag him.
+#define ADMIN_GAG    ADMIN_CHAT  	// Authorized player to gag.
+#define DEFAULT_GAG_TIME   120     // Default time gag example amx_gag mIDnight and it will auto gag him.
 
-new const szChatTag[] = "^4[HW]";
+new const szChatTag[] = "^4[Server]";
 
 enum _:IntData {
 	iGagTime[MAX_PLAYERS+1],
 	iPickPlayer[MAX_PLAYERS+1]
 };
-new g_int[IntData];
+new g_int[IntData], g_vault;
 
 public plugin_init() {
 	register_plugin("[ReAPI] Gag System", "1.4", "mIDnight");
@@ -49,7 +49,7 @@ public plugin_init() {
 	new menu = menu_create("\w[\rHyperWorld\w] \ySelect player to gag", "@clcmd_gagmenu_handler");
 
 	for(new i = 1; i <= MaxClients; i++) {
-		if(!is_user_connected(i) || is_user_bot(i) || get_user_flags(i) & ADMIN_IMMUNITY) {
+		if(!is_user_connected(i) || is_user_bot(i)/* || get_user_flags(i) & ADMIN_IMMUNITY*/) {
 			continue;
 		}
 		menu_additem(menu, fmt("%n", i), fmt("%i", i));
@@ -196,19 +196,18 @@ bool:GagTermsOfUse(const id, const pPlayer, bool:blFlags, bool:blPlayer, bool:bl
 	}
 }
 
-@CBasePlayer_SetClientUserInfoName(const id, const iBuffer, const szNewName[]) {
-	if(g_int[iGagTime][id] > 0) {
-		client_print_color(id, print_team_default, "%L", LANG_PLAYER, "GAG_NO_NAME_CHANGE", szChatTag); 
-		SetHookChainReturn(ATYPE_BOOL, 0);
+@CSGameRules_CanPlayerHearPlayer_Pre(const listener, const sender) {
+	if(g_int[iGagTime][sender] > 0) {
+		SetHookChainReturn(ATYPE_BOOL, false);
 		return HC_SUPERCEDE;
 	}
 	return HC_CONTINUE;
 }
 
-@CSGameRules_CanPlayerHearPlayer_Pre(const listener, const sender) {
-	if(g_int[iGagTime][sender] > 0) {
-		client_print_color(sender, print_team_default, "%L", LANG_PLAYER, "GAG_PLAYER_HAS_GAG", szChatTag, g_int[iGagTime][sender]);
-		SetHookChainReturn(ATYPE_BOOL, false);
+@CBasePlayer_SetClientUserInfoName(const id, const iBuffer, const szNewName[]) {
+	if(g_int[iGagTime][id] > 0) {
+		SetHookChainReturn(ATYPE_BOOL, 0);
+		client_print_color(id, print_team_default, "%L", LANG_PLAYER, "GAG_NO_NAME_CHANGE", szChatTag);
 		return HC_SUPERCEDE;
 	}
 	return HC_CONTINUE;
@@ -221,8 +220,6 @@ public client_disconnected(id) {
 	g_int[iGagTime][id] = 0;
 	g_int[iPickPlayer][id] = 0;
 }
-/******************************** Nvault ****************************/
-new g_vault;
 
 public plugin_cfg() {
 	g_vault = nvault_open("GagSystemVault");
