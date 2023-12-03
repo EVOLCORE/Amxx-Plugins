@@ -30,12 +30,11 @@ public plugin_init() {
 
 	RegisterHookChain(RG_CSGameRules_CanPlayerHearPlayer, "@CSGameRules_CanPlayerHearPlayer_Pre", .post = false);
 	RegisterHookChain(RG_CBasePlayer_SetClientUserInfoName, "@CBasePlayer_SetClientUserInfoName");
-	RegisterHookChain(RG_CSGameRules_CanPlayerHearPlayer, "@CSGameRules_CanPlayerHearPlayer_Pre", .post = false);
 }
 
 @clcmd_say(const id) {
 	if(g_int[iGagTime][id] > 0) {
-		client_print_color(id, print_team_red, "%L", LANG_PLAYER, "GAG_PLAYER_HAS_GAG", szChatTag, g_int[iGagTime][id]);
+		client_print_color(id, print_team_default, "%L", LANG_PLAYER, "GAG_PLAYER_HAS_GAG", szChatTag, g_int[iGagTime][id]);
 		return PLUGIN_HANDLED;
 	}
 	return PLUGIN_CONTINUE;
@@ -43,7 +42,7 @@ public plugin_init() {
 
 @clcmd_gagmenu(const id) {
 	if(~get_user_flags(id) & ADMIN_GAG) {
-		client_print_color(id, print_team_red, "%L", LANG_PLAYER, "GAG_UNAUTHORIZED", szChatTag);
+		client_print_color(id, print_team_default, "%L", LANG_PLAYER, "GAG_UNAUTHORIZED", szChatTag);
 		return;
 	}
 
@@ -79,7 +78,7 @@ public plugin_init() {
 
 @clcmd_settime(const id) {
 	if(~get_user_flags(id) & ADMIN_GAG) {
-		client_print_color(id, print_team_red, "%L", LANG_PLAYER, "GAG_UNAUTHORIZED", szChatTag);
+		client_print_color(id, print_team_default, "%L", LANG_PLAYER, "GAG_UNAUTHORIZED", szChatTag);
 		return PLUGIN_HANDLED;
 	}
 
@@ -89,7 +88,7 @@ public plugin_init() {
 	remove_quotes(szArg);
 
 	if(!(g_int[iPickPlayer][id]) || !is_user_connected(g_int[iPickPlayer][id])) {
-		client_print_color(id, print_team_red, "%L", LANG_PLAYER, "GAG_PLAYER_UNSELECTED", szChatTag);
+		client_print_color(id, print_team_default, "%L", LANG_PLAYER, "GAG_PLAYER_UNSELECTED", szChatTag);
 		return PLUGIN_HANDLED;
 	}
 
@@ -101,7 +100,7 @@ public plugin_init() {
 
 @clcmd_gag(const id) {
 	if(~get_user_flags(id) & ADMIN_GAG) {
-		client_print_color(id, print_team_red, "%L", LANG_PLAYER, "GAG_UNAUTHORIZED", szChatTag);
+		client_print_color(id, print_team_default, "%L", LANG_PLAYER, "GAG_UNAUTHORIZED", szChatTag);
 		return PLUGIN_HANDLED;
 	}
 
@@ -116,7 +115,7 @@ public plugin_init() {
 	pPlayer = find_player("bl", szArg);
 
 	if(szArg[0] == EOS) {
-		client_print_color(id, print_team_red, "%L", LANG_PLAYER, "GAG_PLAYERNAME_EMPTY", szChatTag);
+		client_print_color(id, print_team_default, "%L", LANG_PLAYER, "GAG_PLAYERNAME_EMPTY", szChatTag);
 		return PLUGIN_HANDLED;
 	}
 
@@ -126,7 +125,7 @@ public plugin_init() {
 
 @clcmd_ungag(const id) {
 	if(~get_user_flags(id) & ADMIN_GAG) {
-		client_print_color(id, print_team_red, "%L", LANG_PLAYER, "GAG_UNAUTHORIZED", szChatTag);
+		client_print_color(id, print_team_default, "%L", LANG_PLAYER, "GAG_UNAUTHORIZED", szChatTag);
 		return PLUGIN_HANDLED;
 	}
 
@@ -136,18 +135,18 @@ public plugin_init() {
 	pPlayer = find_player("bl", szArg);
 
 	if(szArg[0] == EOS) {
-		client_print_color(id, print_team_red, "%L", LANG_PLAYER, "GAG_PLAYERNAME_EMPTY", szChatTag);
+		client_print_color(id, print_team_default, "%L", LANG_PLAYER, "GAG_PLAYERNAME_EMPTY", szChatTag);
 		return PLUGIN_HANDLED;
 	}
 	if(g_int[iGagTime][pPlayer] > 0) {
 		remove_task(pPlayer);
 		g_int[iGagTime][pPlayer] = 0;
 
-		client_print_color(0, print_team_red, "%L", LANG_PLAYER, "GAG_PLAYER_UNGAG", szChatTag, id, pPlayer);
+		client_print_color(0, print_team_default, "%L", LANG_PLAYER, "GAG_PLAYER_UNGAG", szChatTag, id, pPlayer);
 		return PLUGIN_HANDLED;
 	}
 	else {
-		client_print_color(id, print_team_red, "%L", LANG_PLAYER, "GAG_PLAYER_NOGAG", szChatTag);
+		client_print_color(id, print_team_default, "%L", LANG_PLAYER, "GAG_PLAYER_NOGAG", szChatTag);
 		return PLUGIN_HANDLED;
 	}
 }
@@ -157,29 +156,29 @@ public plugin_init() {
 		return PLUGIN_HANDLED;
 	}
 	else if(!(iTime > 0)) {
-		client_print_color(id, print_team_red, "%L", LANG_PLAYER, "GAG_TIME_IS_SMALL", szChatTag);
+		client_print_color(id, print_team_default, "%L", LANG_PLAYER, "GAG_TIME_IS_SMALL", szChatTag);
 		return PLUGIN_HANDLED;
 	}
 	else {
 		g_int[iGagTime][pPlayer] = iTime;
 		set_task(1.0, "@CountdownGag", pPlayer, .flags = "b");
 
-		client_print_color(0, print_team_red, "%L", LANG_PLAYER, "GAG_PLAYER_GAG", szChatTag, id, pPlayer, iTime);
+		client_print_color(0, print_team_default, "%L", LANG_PLAYER, "GAG_PLAYER_GAG", szChatTag, id, pPlayer, iTime);
 		return PLUGIN_HANDLED;
 	}
 }
 
 bool:GagTermsOfUse(const id, const pPlayer, bool:blFlags, bool:blPlayer, bool:blOnGag) {
 	if(blPlayer && !pPlayer) {
-		client_print_color(id, print_team_red, "%L", LANG_PLAYER, "GAG_NOPLAYER", szChatTag);
+		client_print_color(id, print_team_default, "%L", LANG_PLAYER, "GAG_NOPLAYER", szChatTag);
 		return true;
 	}
 	if(blFlags && get_user_flags(pPlayer) & ADMIN_IMMUNITY) {
-		client_print_color(id, print_team_red, "%L", LANG_PLAYER, "GAG_PLAYER_IMMUNITY", szChatTag);
+		client_print_color(id, print_team_default, "%L", LANG_PLAYER, "GAG_PLAYER_IMMUNITY", szChatTag);
 		return true;
 	}
 	if(blOnGag && g_int[iGagTime][pPlayer] > 0) {
-		client_print_color(id, print_team_red, "%L", LANG_PLAYER, "GAG_ALREADY_ACTIVE", szChatTag);
+		client_print_color(id, print_team_default, "%L", LANG_PLAYER, "GAG_ALREADY_ACTIVE", szChatTag);
 		return true;
 	}
 	return false;
