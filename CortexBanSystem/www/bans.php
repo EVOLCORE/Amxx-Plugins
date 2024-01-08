@@ -180,8 +180,39 @@ function getCountryFromIP($ip) {
 
 <div class="pagination">
     <?php
-    for ($i = 1; $i <= $totalPages; $i++) {
-        echo '<a href="?page=' . $i . '"' . ($i == $currentPage ? ' class="active"' : '') . '>' . $i . '</a>';
+    // Constants
+    $maxVisiblePages = 5;
+
+    // Previous button
+    if ($currentPage > 1) {
+        echo '<a href="#" data-page="' . ($currentPage - 1) . '">Prev</a>';
+    }
+
+    // Page links
+    $startPage = max(1, min($totalPages - $maxVisiblePages + 1, $currentPage - floor($maxVisiblePages / 2)));
+    $endPage = min($totalPages, $startPage + $maxVisiblePages - 1);
+
+    if ($startPage > 1) {
+        echo '<a href="#" data-page="1">1</a>';
+        if ($startPage > 2) {
+            echo '<span>...</span>';
+        }
+    }
+
+    for ($i = $startPage; $i <= $endPage; $i++) {
+        echo '<a href="#"' . ($i == $currentPage ? ' class="active"' : '') . ' data-page="' . $i . '">' . $i . '</a>';
+    }
+
+    if ($endPage < $totalPages) {
+        if ($endPage < $totalPages - 1) {
+            echo '<span>...</span>';
+        }
+        echo '<a href="#" data-page="' . $totalPages . '">' . $totalPages . '</a>';
+    }
+
+    // Next button
+    if ($currentPage < $totalPages) {
+        echo '<a href="#" data-page="' . ($currentPage + 1) . '">Next</a>';
     }
     ?>
 </div>
@@ -237,78 +268,118 @@ function getCountryFromIP($ip) {
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.2/jquery-ui.min.js" integrity="sha512-57oZ/vW8ANMjR/KQ6Be9v/+/h6bq9/l3f0Oc7vn6qMqyhvPd1cvKBRWWpzu0QoneImqr2SkmO4MSqU+RpHom3Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
-    $(document).ready(function () {
-        var page = 1;
+$(document).ready(function () {
+    var currentPage = 1;
+    var totalPages = <?php echo $totalPages; ?>;
+    var maxVisiblePages = 5;
 
-        function loadData() {
-			var searchTerm = document.getElementById("searchInput").value;
-			var url = '<?= $_SERVER['PHP_SELF'] ?>' + '?page=' + page + '&search=' + searchTerm;
+    function loadData() {
+        var searchTerm = document.getElementById("searchInput").value;
+        var url = '<?= $_SERVER['PHP_SELF'] ?>' + '?page=' + currentPage + '&search=' + searchTerm;
 
-			$.ajax({
-				url: url,
-				method: 'GET',
-				dataType: 'html',
-				success: function (data) {
-					var start = data.indexOf('<tbody id="ccs">') + 16;
-					var end = data.indexOf('</tbody>', start);
-					var newContent = data.substring(start, end);
-					$('#ccs').html(newContent);
-				},
-				error: function (xhr, status, error) {
-					console.error('Error fetching data:', error);
-				}
-			});
+        $.ajax({
+            url: url,
+            method: 'GET',
+            dataType: 'html',
+            success: function (data) {
+                var start = data.indexOf('<tbody id="ccs">') + 16;
+                var end = data.indexOf('</tbody>', start);
+                var newContent = data.substring(start, end);
+                $('#ccs').html(newContent);
+            },
+            error: function (xhr, status, error) {
+                console.error('Error fetching data:', error);
+            }
+        });
+    }
+
+    function updatePagination() {
+		$('.pagination').empty();
+
+		// Update the range of visible pages based on the clicked page
+		var startPage = Math.max(1, Math.min(totalPages - maxVisiblePages + 1, currentPage - Math.floor(maxVisiblePages / 2)));
+		var endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+		if (startPage > 1) {
+			$('.pagination').append('<a href="#" data-page="1">1</a>');
+			if (startPage > 2) {
+				$('.pagination').append('<span>...</span>');
+			}
 		}
 
-        // Initial load
+		for (var i = startPage; i <= endPage; i++) {
+			var link = '<a href="#"' + (i === currentPage ? ' class="active"' : '') + ' data-page="' + i + '">' + i + '</a>';
+			$('.pagination').append(link);
+		}
+
+		if (endPage < totalPages) {
+			if (endPage < totalPages - 1) {
+				$('.pagination').append('<span>...</span>');
+			}
+			var lastPageLink = '<a href="#" data-page="' + totalPages + '">' + totalPages + '</a>';
+			$('.pagination').append(lastPageLink);
+		}
+
+		if (currentPage > 1) {
+			$('.pagination').prepend('<a href="#" data-page="' + (currentPage - 1) + '">Prev</a>');
+		}
+
+		if (currentPage < totalPages) {
+			$('.pagination').append('<a href="#" data-page="' + (currentPage + 1) + '">Next</a>');
+		}
+	}
+
+    loadData();
+    updatePagination();
+
+    $(document).on('click', '.pagination a', function (e) {
+        e.preventDefault();
+
+        var buttonText = $(this).text().toLowerCase();
+
+        if (buttonText === 'prev' && currentPage > 1) {
+            currentPage = currentPage - 1;
+        } else if (buttonText === 'next' && currentPage < totalPages) {
+            currentPage = currentPage + 1;
+        } else if (!isNaN(parseInt(buttonText))) {
+            currentPage = parseInt(buttonText);
+        }
+
         loadData();
-
-        // Handle pagination click
-        $(document).on('click', '.pagination a', function (e) {
-            e.preventDefault();
-
-            // Remove "active" class from all pagination links
-            $('.pagination a').removeClass('active');
-
-            // Add "active" class to the clicked link
-            $(this).addClass('active');
-
-            page = parseInt($(this).attr('href').split('=')[1]);
-            loadData();
-        });
-
-		// Handle Unban button click
-		$(document).on('click', '.unban-btn', function () {
-			var steamid = $(this).data('steamid');
-			unbanPlayer(steamid);
-		});
-
-        // Regular refresh
-        setInterval(function () {
-            loadData();
-        }, 5000);
+        updatePagination();
     });
 
-    function unbanPlayer(steamid) {
-        if (confirm("Are you sure you want to unban this player?")) {
-            var formData = {
-                unbanSteamID: steamid
-            };
+    $(document).on('click', '.unban-btn', function () {
+        var steamid = $(this).data('steamid');
+        unbanPlayer(steamid);
+    });
 
-            $.ajax({
-                type: 'POST',
-                url: '',
-                data: formData,
-                success: function () {
-                    // Reload the data after successful unban
-                    loadData();
-                },
-                error: function (xhr, status, error) {
-                    console.error('Error during unban:', error);
-                }
-            });
-        }
+    // Regular refresh
+    setInterval(function () {
+        loadData();
+    }, 5000);
+});
+
+function unbanPlayer(steamid) {
+    if (confirm("Are you sure you want to unban this player?")) {
+        var formData = {
+            unbanSteamID: steamid
+        };
+
+        $.ajax({
+            type: 'POST',
+            url: '',
+            data: formData,
+            success: function () {
+                // Reload the data after successful unban
+                loadData();
+            },
+            error: function (xhr, status, error) {
+                console.error('Error during unban:', error);
+            }
+        });
     }
+}
 </script>
 <footer class="footer mt-5">
     <div class="container text-center">
