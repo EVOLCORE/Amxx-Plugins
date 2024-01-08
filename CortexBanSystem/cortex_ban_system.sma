@@ -9,6 +9,7 @@ new const User[]        = "";
 new const Pass[]        = "";
 new const Db[]          = "";
 new const Table[]       = "cortex_bans";
+new const ServerIP[]    = "89.207.132.170:27015";
 
 enum eLastBan {
     name[32],
@@ -26,7 +27,7 @@ enum _:BanOptions {
     Reason[32]
 }
 
-new g_eBanOptions[MAX_PLAYERS + 1][BanOptions], g_ServerAddress[32];
+new g_eBanOptions[MAX_PLAYERS + 1][BanOptions];
 
 new Array:g_iLastBanArray;
 new Handle:g_hSqlDbTuple;
@@ -157,7 +158,6 @@ stock AddBan(const id, const target, const szName[], const szAuthID[], const szI
     }
 
     new szAdminName[32], szAdminAuthID[32];
-    get_user_ip(0, g_ServerAddress, 31);
 
     if(id && is_user_connected(id)) {
         get_user_name(id, szAdminName, charsmax(szAdminName));
@@ -169,7 +169,7 @@ stock AddBan(const id, const target, const szName[], const szAuthID[], const szI
     }
 
     new szQuery[1096];
-    formatex(szQuery, charsmax(szQuery), "INSERT INTO %s (name, authid, ip, bantime, unbantime, reason, adminname, adminauthid, serverip) VALUES ('%s', '%s', '%s', %i, '%s', '%s', '%s', '%s', '%s');", Table, szName, szAuthID, szIP, iBanTime, szUnBanTime, szReason, szAdminName, szAdminAuthID, g_ServerAddress);
+    formatex(szQuery, charsmax(szQuery), "INSERT INTO %s (name, authid, ip, bantime, unbantime, reason, adminname, adminauthid, serverip) VALUES ('%s', '%s', '%s', %i, '%s', '%s', '%s', '%s', '%s');", Table, szName, szAuthID, szIP, iBanTime, szUnBanTime, szReason, szAdminName, szAdminAuthID, ServerIP);
     SQL_ThreadQuery(g_hSqlDbTuple, "IgnoreHandle", szQuery);
 
     new szBanTime[32];
@@ -300,7 +300,6 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
     }
 
     new szAdminName[32], szAdminAuthID[32];
-    get_user_ip(0, g_ServerAddress, 31);
 
     if(id && is_user_connected(id)) {
         get_user_name(id, szAdminName, charsmax(szAdminName));
@@ -318,7 +317,7 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
     read_argv(3, szDataExplode[3], charsmax(szDataExplode[]));
 
     new szQuery[1096];
-    formatex(szQuery, charsmax(szQuery), "INSERT INTO %s (name, authid, ip, bantime, unbantime, reason, adminname, adminauthid, serverip) VALUES ('%s', '%s', '%s', '-1', 'PERMANENT', '%s', '%s', '%s', '%s');", Table, szDataExplode[0], szDataExplode[1], szDataExplode[2], szDataExplode[3], szAdminName, szAdminAuthID, g_ServerAddress);
+    formatex(szQuery, charsmax(szQuery), "INSERT INTO %s (name, authid, ip, bantime, unbantime, reason, adminname, adminauthid, serverip) VALUES ('%s', '%s', '%s', '-1', 'PERMANENT', '%s', '%s', '%s', '%s');", Table, szDataExplode[0], szDataExplode[1], szDataExplode[2], szDataExplode[3], szAdminName, szAdminAuthID, ServerIP);
 
     SQL_ThreadQuery(g_hSqlDbTuple, "IgnoreHandle", szQuery);
 
