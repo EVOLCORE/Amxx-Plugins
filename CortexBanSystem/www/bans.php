@@ -293,7 +293,7 @@ $(document).ready(function () {
         });
     }
 
-    function updatePagination() {
+	function updatePagination() {
 		$('.pagination').empty();
 
 		// Update the range of visible pages based on the clicked page
@@ -301,14 +301,21 @@ $(document).ready(function () {
 		var endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
 
 		if (startPage > 1) {
-			$('.pagination').append('<a href="#" data-page="1">1</a>');
+			$('.pagination').append('<a href="#" data-page="1">First</a>');
 			if (startPage > 2) {
 				$('.pagination').append('<span>...</span>');
 			}
 		}
 
 		for (var i = startPage; i <= endPage; i++) {
-			var link = '<a href="#"' + (i === currentPage ? ' class="active"' : '') + ' data-page="' + i + '">' + i + '</a>';
+			var link;
+			if (i === 1) {
+				link = '<a href="#"' + (i === currentPage ? ' class="active"' : '') + ' data-page="' + i + '">First</a>';
+			} else if (i === totalPages) {
+				link = '<a href="#"' + (i === currentPage ? ' class="active"' : '') + ' data-page="' + i + '">Last</a>';
+			} else {
+				link = '<a href="#"' + (i === currentPage ? ' class="active"' : '') + ' data-page="' + i + '">' + i + '</a>';
+			}
 			$('.pagination').append(link);
 		}
 
@@ -316,7 +323,7 @@ $(document).ready(function () {
 			if (endPage < totalPages - 1) {
 				$('.pagination').append('<span>...</span>');
 			}
-			var lastPageLink = '<a href="#" data-page="' + totalPages + '">' + totalPages + '</a>';
+			var lastPageLink = '<a href="#" data-page="' + totalPages + '">Last</a>';
 			$('.pagination').append(lastPageLink);
 		}
 
@@ -329,25 +336,27 @@ $(document).ready(function () {
 		}
 	}
 
+
     loadData();
     updatePagination();
 
-    $(document).on('click', '.pagination a', function (e) {
-        e.preventDefault();
+	$(document).on('click', '.pagination a', function (e) {
+		e.preventDefault();
 
-        var buttonText = $(this).text().toLowerCase();
+		var buttonText = $(this).text().toLowerCase();
+		var clickedPage = $(this).data('page');
 
-        if (buttonText === 'prev' && currentPage > 1) {
-            currentPage = currentPage - 1;
-        } else if (buttonText === 'next' && currentPage < totalPages) {
-            currentPage = currentPage + 1;
-        } else if (!isNaN(parseInt(buttonText))) {
-            currentPage = parseInt(buttonText);
-        }
+		if (buttonText === 'prev' && currentPage > 1) {
+			currentPage = currentPage - 1;
+		} else if (buttonText === 'next' && currentPage < totalPages) {
+			currentPage = currentPage + 1;
+		} else if (!isNaN(parseInt(clickedPage))) {
+			currentPage = parseInt(clickedPage);
+		}
 
-        loadData();
-        updatePagination();
-    });
+		loadData();
+		updatePagination();
+	});
 
     $(document).on('click', '.unban-btn', function () {
         var steamid = $(this).data('steamid');
