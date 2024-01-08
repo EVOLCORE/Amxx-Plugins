@@ -6,6 +6,39 @@ body {
     .logo {
         padding: 20px;
     }
+    
+    /*
+    .redot {
+        position: absolute;
+        top: 175px;
+        right: 840px;
+        width: 15px;
+        height: 15px;
+        border-radius: 25px; 
+        box-shadow: 0px 0px 15px #ff0000;
+        background-color: red;
+        z-index: 9;
+        animation-name: backgroundColorPalette;
+        animation-duration: 2s;
+        animation-iteration-count: infinite;
+        animation-direction: alternate;
+    }
+    */
+    
+    @keyframes backgroundColorPalette {
+  0% {
+    background: #ff000000;
+    box-shadow: 0px 0px 15px #ff000000;
+  }
+  50% {
+    background: #ff0000;
+    box-shadow: 0px 0px 15px 15px #ff0000;
+  }
+  100% {
+    background: #ff000075;
+    box-shadow: 0px 0px 15px #ff000000;
+  }
+}
 
     .author {
 		color: white;
@@ -29,6 +62,16 @@ body {
     button.unban-btn:hover {
         background-color: #2980b9;
     }
+    
+    .btn {
+        font-size: 24px;
+    }
+    
+    
+    .btn:hover {
+        color: #00A86E;
+    }
+    
 
     /* Add the following styles for the table header columns */
     th {
@@ -49,6 +92,13 @@ body {
         max-height: 20px;
         margin-right: 5px;
     }
+
+	.pagination {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		margin-top: 20px; /* Adjust the margin as needed */
+	}
 
 	.pagination a {
 		color: white;
@@ -73,6 +123,12 @@ body {
 		background-color: #3498db;
 		color: #fff;
 		border: 1px solid #2980b9;
+	}
+
+	/* Centering the pagination */
+	.pagination a,
+	.pagination span {
+		display: inline-block;
 	}
 
 	body::-webkit-scrollbar {
