@@ -1,17 +1,3 @@
-<?php
-session_start();
-
-if (!isset($_SESSION['username'])) {
-    header('Location: index.php');
-    exit();
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['logout'])) {
-    session_destroy();
-    header('Location: index.php');
-    exit();
-}
-?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -67,6 +53,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['logout'])) {
     <tbody id="ccs">
 
 <?php
+session_start();
+
+if (!isset($_SESSION['username'])) {
+    header('Location: index.php');
+    exit();
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['logout'])) {
+    session_destroy();
+    header('Location: index.php');
+    exit();
+}
+
 require_once 'geoip2.phar';
 use GeoIp2\Database\Reader;
 
@@ -82,18 +81,25 @@ try {
         throw new Exception("Connection failed: " . $conn->connect_error);
     }
 
+    // Function to sanitize user input
+    function sanitizeInput($input)
+    {
+        return htmlspecialchars(trim($input), ENT_QUOTES, 'UTF-8');
+    }
+
+    $searchTerm = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
+
     $sqlCount = "SELECT COUNT(*) AS count FROM cortex_bans";
     $resultCount = $conn->query($sqlCount);
     $rowCount = $resultCount->fetch_assoc()['count'];
     $totalPages = ceil($rowCount / $resultsPerPage);
 
     $startLimit = ($currentPage - 1) * $resultsPerPage;
-    $searchTerm = isset($_GET['search']) ? $_GET['search'] : '';
 
-	$sql = "SELECT * FROM cortex_bans WHERE name LIKE ? OR authid LIKE ? ORDER BY unbantime DESC LIMIT $startLimit, $resultsPerPage";
+    $sql = "SELECT * FROM cortex_bans WHERE name LIKE ? OR authid LIKE ? ORDER BY unbantime DESC LIMIT ?, ?";
     $stmt = $conn->prepare($sql);
     $searchPattern = "%$searchTerm%";
-    $stmt->bind_param("ss", $searchPattern, $searchPattern);
+    $stmt->bind_param("ssii", $searchPattern, $searchPattern, $startLimit, $resultsPerPage);
     $stmt->execute();
     $result = $stmt->get_result();
     $stmt->close();
@@ -117,7 +123,6 @@ try {
 
             $countryCode = getCountryFromIP($row['ip']);
             $countryFlagPath = "/images/flags/{$countryCode}.png";
-
             ?>
             <tr>
                 <th scope='row'><?= $i ?></th>
@@ -138,7 +143,7 @@ try {
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['unbanSteamID'])) {
-        $unbanSteamID = $_POST['unbanSteamID'];
+        $unbanSteamID = sanitizeInput($_POST['unbanSteamID']);
 
         $sql = "DELETE FROM cortex_bans WHERE authid = ?";
         $stmt = $conn->prepare($sql);
@@ -156,25 +161,16 @@ try {
 }
 
 function getCountryFromIP($ip) {
-    // Specify the path to the GeoLite2 City database
     $databasePath = __DIR__ . '/GeoLite2-City.mmdb';
-
     try {
-        // Create a GeoIP2 reader
         $reader = new Reader($databasePath);
-
-        // Get the country information based on the IP address
         $record = $reader->city($ip);
-
-        // Return the country code (two letters)
         return $record->country->isoCode;
     } catch (Exception $e) {
-        // Handle exceptions, for example, log the error
         return 'Unknown';
     }
 }
 ?>
-
     </tbody>
 </table>
 
