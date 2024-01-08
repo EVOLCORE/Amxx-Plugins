@@ -50,26 +50,31 @@ body {
         margin-right: 5px;
     }
 
-    .pagination {
-        display: flex;
-        justify-content: center;
-        margin-top: 20px;
-    }
+	.pagination a {
+		color: white;
+		padding: 8px 16px;
+		text-decoration: none;
+		transition: background-color 0.2s ease;
+		border: 1px solid #3498db; /* Add border for better visibility */
+	}
 
-    .pagination a {
-        color: white;
-        padding: 8px 16px;
-        text-decoration: none;
-        transition: background-color 0.2s ease;
-    }
+	.pagination a.active {
+		background-color: #3498db;
+		color: #fff;
+	}
 
-    .pagination a.active {
-        background-color: #3498db;
-    }
+	.pagination a:hover {
+		background-color: #2980b9;
+	}
 
-    .pagination a:hover {
-        background-color: #2980b9;
-    }
+	/* Additional styles for Previous and Next buttons */
+	.pagination a:not(.active):hover,
+	.pagination a:not(.active):focus {
+		background-color: #3498db;
+		color: #fff;
+		border: 1px solid #2980b9;
+	}
+
 	body::-webkit-scrollbar {
 		width: 6px;
 	}
