@@ -193,16 +193,21 @@ function formatTime($minutes) {
 
     if ($days > 0) {
         $formattedTime .= ($days == 1) ? '1 day' : $days . ' days';
-        $formattedTime .= ', ';
-    }
+        if ($hours > 0) {
+            $formattedTime .= ', ';
+            $formattedTime .= ($hours == 1) ? '1 hour' : $hours . ' hours';
+        }
+    } else {
+        if ($hours > 0) {
+            $formattedTime .= ($hours == 1) ? '1 hour' : $hours . ' hours';
+            if ($remainingMinutes > 0) {
+                $formattedTime .= ', ';
+            }
+        }
 
-    if ($hours > 0) {
-        $formattedTime .= ($hours == 1) ? '1 hour' : $hours . ' hours';
-        $formattedTime .= ', ';
-    }
-
-    if ($remainingMinutes > 0 || empty($formattedTime)) {
-        $formattedTime .= ($remainingMinutes == 1) ? '1 minute' : $remainingMinutes . ' minutes';
+        if ($remainingMinutes > 0 || empty($formattedTime)) {
+            $formattedTime .= ($remainingMinutes == 1) ? '1 minute' : $remainingMinutes . ' minutes';
+        }
     }
 
     return $formattedTime;
