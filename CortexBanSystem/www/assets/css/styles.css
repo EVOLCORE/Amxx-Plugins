@@ -48,10 +48,6 @@ body {
     }
 }
 
-.col-12.text-center {
-    position: relative;
-}
-
 .author {
     color: white;
     font-weight: 800;
@@ -60,39 +56,44 @@ body {
     padding-left: 50px;
 }
 
-button.unban-btn {
-    background-color: #3498db;
-    color: #ffffff;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
+.unban-btn {
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: transform 0.1s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 52px;
+    border: 1px solid #dc3545;
+    background-color: #dc3545;
+    color: #fff;
+    font-weight: bold;
+    border-radius: 0px; /* Add rounded corners */
+    transform-origin: center;
 }
 
-button.unban-btn:hover {
-    background-color: #2980b9;
+.unban-btn:hover {
+    transform: scale(1.05);
 }
 
-.btn {
-    font-size: 24px;
+.icon-link-hover {
+    color: white;
+    transition: color 0.1s ease-in-out;
 }
 
-.btn:hover {
+.icon-link-hover:hover {
     color: #3498db;
-}
+    }
 
 th {
     font-size: 18px;
     font-family: 'Arial', sans-serif;
     position: relative;
     cursor: pointer;
-    transition: color 0.2s ease, text-shadow 0.2s ease;
+    transition: color 0.1s ease-in-out;
 }
 
 th:hover {
     color: #3498db;
-    text-shadow: 0 0 5px #3498db;
 }
 
 .flag {
