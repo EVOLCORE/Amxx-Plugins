@@ -126,7 +126,7 @@ try {
                 'nick' => $row['name'],
                 'steamid' => $row['authid'],
                 'ip' => $row['ip'],
-                'time' => ($row['bantime'] == -1) ? 'PERMANENT' : $row['bantime'] . ' minutes',
+                'time' => ($row['bantime'] == -1) ? 'PERMANENT' : formatTime($row['bantime']),
                 'length' => $row['unbantime'],
                 'reason' => $row['reason'],
                 'admin' => $row['adminname'],
@@ -142,13 +142,13 @@ try {
                 <td><?= $row['name'] ?></td>
                 <td><?= $row['authid'] ?></td>
                 <td><img src='<?= $countryFlagPath ?>' class='flag'><?= $row['ip'] ?></td>
-                <td><?= ($row['bantime'] == -1) ? 'PERMANENT' : $row['bantime'] . ' minutes' ?></td>
+				<td><?= ($row['bantime'] == -1) ? 'PERMANENT' : formatTime($row['bantime']) ?></td>
                 <td><?= $row['unbantime'] ?></td>
                 <td><?= $row['reason'] ?></td>
                 <td><?= $row['adminname'] ?></td>
                 <td><?= $row['adminauthid'] ?></td>
                 <td><?= $row['serverip'] ?></td>
-                <td><button class='unban-btn' data-steamid="<?= $row['authid'] ?>">Unban</button></td>
+                <td class="bg-danger unban-btn" data-steamid="<?= $row['authid'] ?>">Unban</td>
             </tr>
             <?php
             $i++;
@@ -182,6 +182,30 @@ function getCountryFromIP($ip) {
     } catch (Exception $e) {
         return 'Unknown';
     }
+}
+
+function formatTime($minutes) {
+    $days = floor($minutes / 1440);
+    $hours = floor(($minutes % 1440) / 60);
+    $remainingMinutes = $minutes % 60;
+
+    $formattedTime = '';
+
+    if ($days > 0) {
+        $formattedTime .= ($days == 1) ? '1 day' : $days . ' days';
+        $formattedTime .= ', ';
+    }
+
+    if ($hours > 0) {
+        $formattedTime .= ($hours == 1) ? '1 hour' : $hours . ' hours';
+        $formattedTime .= ', ';
+    }
+
+    if ($remainingMinutes > 0 || empty($formattedTime)) {
+        $formattedTime .= ($remainingMinutes == 1) ? '1 minute' : $remainingMinutes . ' minutes';
+    }
+
+    return $formattedTime;
 }
 ?>
     </tbody>
