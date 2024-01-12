@@ -1,3 +1,9 @@
+<?php
+$cssFilePath = 'assets/css/styles.css';
+$version = md5_file($cssFilePath);
+$cssUrl = "assets/css/styles.css?v=$version";
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,19 +14,22 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
         integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
                 <script src="https://kit.fontawesome.com/66a103f21e.js" crossorigin="anonymous"></script>
-	<link rel="stylesheet" href="assets/css/styles.css?v=1.3.9">
+	<link rel="stylesheet" href="<?php echo $cssUrl; ?>">
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
 <div class="row justify-content-end mt-3 mr-3">
     <div class="col-md-6 text-right">
-        <a href="?logout" class="btn btn-secondary icon-link-hover"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
+        <a href="?logout" class="btn btn-secondary icon-link-hover" style="font-size: 23px;"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
     </div>
 </div>
 
 <div class="row justify-content-center">
     <div class="col-12 text-center">
-        <img src="https://i.postimg.cc/7ZhFSkXz/logo.png" class="logo">
+        <div class="logo-container">
+            <img src="https://i.postimg.cc/7ZhFSkXz/logo.png" class="logo">
+            <div class="redot"></div>
+        </div>
     </div>
 </div>
 
@@ -72,6 +81,9 @@ use GeoIp2\Database\Reader;
 
 require_once 'inc/config.php';
 
+$cssFilePath = 'assets/css/styles.css';
+$version = md5_file($cssFilePath);
+$cssUrl = "assets/css/styles.css?v=$version";
 $resultsPerPage = 15;
 $currentPage = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 
@@ -123,7 +135,7 @@ try {
             ];
 
             $countryCode = getCountryFromIP($row['ip']);
-            $countryFlagPath = "/cortexbans/assets/images/flags/{$countryCode}.png";
+            $countryFlagPath = "/bans/assets/images/flags/{$countryCode}.png";
             ?>
             <tr>
                 <th scope='row'><?= $i ?></th>
