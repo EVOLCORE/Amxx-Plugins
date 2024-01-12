@@ -68,10 +68,11 @@ body {
     color: #fff;
     font-weight: bold;
     border-radius: 0px; /* Add rounded corners */
-    transform-origin: center;
+    transform-origin: center; /* Set the transform origin to the center */
 }
 
 .unban-btn:hover {
+    color: #fff;
     transform: scale(1.05);
 }
 
@@ -93,7 +94,21 @@ th {
 }
 
 th:hover {
+    transform: scale(1.04);
     color: #3498db;
+}
+
+td {
+    font-size: 15px;
+    font-family: 'Arial', sans-serif;
+    position: relative;
+    cursor: pointer;
+    transition: color 0.1s ease-in-out;
+}
+
+td:hover {
+    color: #3498db;
+    transform: scale(1.05);
 }
 
 .flag {
