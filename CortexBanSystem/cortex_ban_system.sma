@@ -11,6 +11,9 @@ new const Db[]          = "";
 new const Table[]       = "cortex_bans";
 new const ServerIP[]    = "89.207.132.170:27015";
 
+#define IGNORE_FLAG     ADMIN_IMMUNITY
+#define is_valid_player(%1) (is_user_connected(%1) && !is_user_bot(%1) && !(get_user_flags(%1) & IGNORE_FLAG))
+
 enum eLastBan {
     name[32],
     authid[32],
@@ -33,7 +36,7 @@ new Array:g_iLastBanArray;
 new Handle:g_hSqlDbTuple;
 
 public plugin_init() {
-    register_plugin("Cortex Ban System", "0.0.3", "mIDnight");
+    register_plugin("Cortex Ban System", "0.0.4", "mIDnight");
 
     register_concmd("amx_pban", "@ConCmd_PBan", ADMIN_BAN, "<name, steamid, ip, #userid> <reason>");
     register_concmd("amx_ban", "@ConCmd_Ban", ADMIN_BAN, "<name, steamid, ip, #userid> <minutes> <reason>");
@@ -337,19 +340,17 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
 }
 
 @ConCmd_BanMenu(const id, const level, const cid) {
-    if(!cmd_access(id, level, cid, 0)) {
+    if (!cmd_access(id, level, cid, 0)) {
         return PLUGIN_HANDLED;
     }
 
-    new iMenu = menu_create("Players for ban", "@ConCmd_BanMenu_Handler");
+    new iMenu = menu_create("Ban Menu: Select player to ban", "@ConCmd_BanMenu_Handler");
 
-    for(new pPlayer = 1, szTeamName[32]; pPlayer <= MaxClients; pPlayer++) {
-        if(!is_user_connected(pPlayer) || is_user_bot(pPlayer) || get_user_flags(pPlayer) & ADMIN_IMMUNITY) {
-            continue;
+    for (new pPlayer = 1, szTeamName[32]; pPlayer <= MaxClients; pPlayer++) {
+        if (is_valid_player(pPlayer)) {
+            GetClientTeamName(pPlayer, szTeamName, charsmax(szTeamName));
+            menu_additem(iMenu, fmt("%n [\r%s\w]", pPlayer, szTeamName), fmt("%i", pPlayer));
         }
-
-        GetClientTeamName(pPlayer, szTeamName, charsmax(szTeamName));
-        menu_additem(iMenu, fmt("%n (%s)", pPlayer, szTeamName), fmt("%i", pPlayer));
     }
 
     menu_display(id, iMenu);
@@ -357,7 +358,7 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
 }
 
 @ConCmd_BanMenu_Handler(const id, const menu, const item) {
-    if(item == MENU_EXIT) {
+    if (item == MENU_EXIT) {
         menu_destroy(menu);
         return;
     }
@@ -367,7 +368,7 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
 
     g_eBanOptions[id][Target] = str_to_num(szData);
 
-    if(!is_user_connected(g_eBanOptions[id][Target])) {
+    if (!is_valid_player(g_eBanOptions[id][Target])) {
         return;
     }
 
@@ -375,7 +376,11 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
     get_user_authid(g_eBanOptions[id][Target], g_eBanOptions[id][TargetAuthid], charsmax(g_eBanOptions[][TargetAuthid]));
     get_user_ip(g_eBanOptions[id][Target], g_eBanOptions[id][TargetIP], charsmax(g_eBanOptions[][TargetIP]), 1);
 
-    new iMenu = menu_create("Choose Time", "@BanMenu_Time_Handler");
+    ShowBanTimeMenu(id);
+}
+
+ShowBanTimeMenu(const id) {
+    new iMenu = menu_create("Choose ban time", "@BanMenu_Time_Handler");
 
     menu_additem(iMenu, "5 Minutes", "5");
     menu_additem(iMenu, "10 Minutes", "10");
@@ -387,7 +392,7 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
 }
 
 @BanMenu_Time_Handler(const id, const menu, const item) {
-    if(item == MENU_EXIT) {
+    if (item == MENU_EXIT) {
         menu_destroy(menu);
         return;
     }
@@ -397,6 +402,10 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
 
     g_eBanOptions[id][eBanTime] = str_to_num(szData);
 
+    ShowBanReasonMenu(id);
+}
+
+ShowBanReasonMenu(const id) {
     new iMenu = menu_create("Choose Reason", "@BanMenu_Reason_Handler");
 
     menu_additem(iMenu, "Aimbot", "Aimbot");
@@ -408,7 +417,7 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
 }
 
 @BanMenu_Reason_Handler(const id, const menu, const item) {
-    if(item == MENU_EXIT) {
+    if (item == MENU_EXIT) {
         menu_destroy(menu);
         return;
     }
@@ -418,42 +427,41 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
 
     formatex(g_eBanOptions[id][Reason], charsmax(g_eBanOptions[][Reason]), szData);
 
-    if(!is_user_connected(g_eBanOptions[id][Target])) {
-        return;
-    }
-
-    if(!g_eBanOptions[id][eBanTime]) {
+    if (!g_eBanOptions[id][eBanTime]) {
         g_eBanOptions[id][eBanTime] = -1;
         formatex(g_eBanOptions[id][UnBanTime], charsmax(g_eBanOptions[][UnBanTime]), "PERMANENT");
-    }
-    else {
+    } else {
         GenerateUnbanTime(g_eBanOptions[id][eBanTime], g_eBanOptions[id][UnBanTime], charsmax(g_eBanOptions[][UnBanTime]));
     }
 
-    AddBan(id, g_eBanOptions[id][Target], g_eBanOptions[id][TargetName],  g_eBanOptions[id][TargetAuthid],  g_eBanOptions[id][TargetIP],  g_eBanOptions[id][eBanTime], g_eBanOptions[id][UnBanTime],  g_eBanOptions[id][Reason], sizeof(g_eBanOptions[][Reason]));
+    AddBan(id, g_eBanOptions[id][Target], g_eBanOptions[id][TargetName], g_eBanOptions[id][TargetAuthid], g_eBanOptions[id][TargetIP], g_eBanOptions[id][eBanTime], g_eBanOptions[id][UnBanTime], g_eBanOptions[id][Reason], sizeof(g_eBanOptions[][Reason]));
 }
 
 @ConCmd_LastBan(const id, const level, const cid) {
-    if(!cmd_access(id, level, cid, 0)) {
+    if (!cmd_access(id, level, cid, 0)) {
         return PLUGIN_HANDLED;
     }
 
-    new iMenu = menu_create("LastBan", "@ConCmd_LastBan_Handler");
+    ShowLastBanMenu(id);
+    return PLUGIN_HANDLED;
+}
+
+ShowLastBanMenu(const id) {
+    new iMenu = menu_create("Last Ban menu: Select player to ban", "@ConCmd_LastBan_Handler");
 
     new iArraySize = ArraySize(g_iLastBanArray);
 
-    for(new i = 0, iData[eLastBan]; i < iArraySize; i++) {
+    for (new i = 0, iData[eLastBan]; i < iArraySize; i++) {
         ArrayGetArray(g_iLastBanArray, i, iData);
 
         menu_additem(iMenu, fmt("[%s][%s][%s]", iData[name], iData[authid], iData[ip]), fmt("%i", i));
     }
 
     menu_display(id, iMenu);
-    return PLUGIN_HANDLED;
 }
 
 @ConCmd_LastBan_Handler(const id, const menu, const item) {
-    if(item == MENU_EXIT) {
+    if (item == MENU_EXIT) {
         menu_destroy(menu);
         return;
     }
@@ -467,19 +475,11 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
     formatex(g_eBanOptions[id][TargetAuthid], charsmax(g_eBanOptions[][TargetAuthid]), iData[authid]);
     formatex(g_eBanOptions[id][TargetIP], charsmax(g_eBanOptions[][TargetIP]), iData[ip]);
 
-    new iMenu = menu_create("Choose Time", "@LastBan_Time_Handler");
-
-    menu_additem(iMenu, "5 Minutes", "5");
-    menu_additem(iMenu, "10 Minutes", "10");
-    menu_additem(iMenu, "30 Minutes", "30");
-    menu_additem(iMenu, "1 Hour", "60");
-    menu_additem(iMenu, "Permanently", "0");
-
-    menu_display(id, iMenu);
+    ShowBanTimeMenu(id);
 }
 
 @LastBan_Time_Handler(const id, const menu, const item) {
-    if(item == MENU_EXIT) {
+    if (item == MENU_EXIT) {
         menu_destroy(menu);
         return;
     }
@@ -489,18 +489,11 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
 
     g_eBanOptions[id][eBanTime] = str_to_num(szData);
 
-    new iMenu = menu_create("Choose Reason", "@LastBan_Reason_Handler");
-
-    menu_additem(iMenu, "Aimbot", "Aimbot");
-    menu_additem(iMenu, "Wallhack", "Wallhack");
-    menu_additem(iMenu, "Speedhack", "Speedhack");
-    menu_additem(iMenu, "Insult", "Insult");
-
-    menu_display(id, iMenu);
+    ShowBanReasonMenu(id);
 }
 
 @LastBan_Reason_Handler(const id, const menu, const item) {
-    if(item == MENU_EXIT) {
+    if (item == MENU_EXIT) {
         menu_destroy(menu);
         return PLUGIN_HANDLED;
     }
@@ -510,15 +503,14 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
 
     formatex(g_eBanOptions[id][Reason], charsmax(g_eBanOptions[][Reason]), szData);
 
-    if(!g_eBanOptions[id][eBanTime]) {
+    if (!g_eBanOptions[id][eBanTime]) {
         g_eBanOptions[id][eBanTime] = -1;
         formatex(g_eBanOptions[id][UnBanTime], charsmax(g_eBanOptions[][UnBanTime]), "PERMANENT");
-    }
-    else {
+    } else {
         GenerateUnbanTime(g_eBanOptions[id][eBanTime], g_eBanOptions[id][UnBanTime], charsmax(g_eBanOptions[][UnBanTime]));
     }
 
-    AddBan(id, g_eBanOptions[id][Target], g_eBanOptions[id][TargetName],  g_eBanOptions[id][TargetAuthid],  g_eBanOptions[id][TargetIP],  g_eBanOptions[id][eBanTime], g_eBanOptions[id][UnBanTime],  g_eBanOptions[id][Reason], sizeof(g_eBanOptions[][Reason]));
+    AddBan(id, g_eBanOptions[id][Target], g_eBanOptions[id][TargetName], g_eBanOptions[id][TargetAuthid], g_eBanOptions[id][TargetIP], g_eBanOptions[id][eBanTime], g_eBanOptions[id][UnBanTime], g_eBanOptions[id][Reason], sizeof(g_eBanOptions[][Reason]));
     return PLUGIN_HANDLED;
 }
 
