@@ -81,9 +81,6 @@ use GeoIp2\Database\Reader;
 
 require_once 'inc/config.php';
 
-$cssFilePath = 'assets/css/styles.css';
-$version = md5_file($cssFilePath);
-$cssUrl = "assets/css/styles.css?v=$version";
 $resultsPerPage = 15;
 $currentPage = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 
@@ -431,7 +428,7 @@ function unbanPlayer(steamid) {
 <footer class="footer mt-5">
     <div class="container text-center">
         <hr class="my-4">
-        <p class="text-muted mb-0">Cortex Ban System &copy; 2023</p>
+        <p class="text-muted mb-0">Cortex Ban System &copy; <?= date('Y') ?></p>
         <p class="text-muted mb-0">Powered by <a href="https://www.cs-down.me/" target="_blank" style="color: #3498db; text-decoration: none; font-weight: bold;">mIDnight</a></p>
 		<br>
     </div>
