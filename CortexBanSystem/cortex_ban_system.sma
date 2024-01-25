@@ -36,7 +36,7 @@ new Array:g_iLastBanArray;
 new Handle:g_hSqlDbTuple;
 
 public plugin_init() {
-    register_plugin("Cortex Ban System", "0.0.4", "mIDnight");
+    register_plugin("Cortex Ban System", "0.0.5", "mIDnight");
 
     register_concmd("amx_pban", "@ConCmd_PBan", ADMIN_BAN, "<name, steamid, ip, #userid> <reason>");
     register_concmd("amx_ban", "@ConCmd_Ban", ADMIN_BAN, "<name, steamid, ip, #userid> <minutes> <reason>");
@@ -48,19 +48,26 @@ public plugin_init() {
 
     g_iLastBanArray = ArrayCreate(eLastBan);
 
-    set_task(1.0, "@Task_Mysql");
+    set_task(0.5, "@Task_Mysql");
     set_task(60.0, "@Task_Unban", .flags = "b");
 
     register_dictionary("cortex_ban_system.txt");
 }
 
 public client_putinserver(id) {
+    set_task(2.0, "@Task_CheckBannedPlayer", id);
+}
+
+@Task_CheckBannedPlayer(id) {
+    if(!is_valid_player(id))
+		return;
+	else	remove_task(id);
+
     new szDMax[32];
     get_user_info(id, "cl_dmax", szDMax, charsmax(szDMax));
 
     if(szDMax[0] != EOS) {
         server_cmd("kick #%d ^"%L^"", get_user_userid(id), id, "KICK_YOU_ARE_BANNED");
-        return;
     }
 
     new szAuthID[32], szIP[32], szQuery[1096], iData[1];
@@ -249,7 +256,6 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
     read_argv(2, g_eBanOptions[id][Reason], sizeof(g_eBanOptions[][Reason]));
 
     set_user_info(iTarget, "cl_dmax", "512");
-    SendUserCommand(iTarget, "setinfo _sys ^"512^"");
 
     formatex(g_eBanOptions[id][UnBanTime], sizeof(g_eBanOptions[][UnBanTime]), "PERMANENT");
 
@@ -576,15 +582,4 @@ stock UTIL_console_print(const id, const szFmt[], any:...) {
 	else	server_print(szMessage);
 
 	return PLUGIN_HANDLED;
-}
-
-stock SendUserCommand(const id, const szText[], any:...)  {
-	#pragma unused szText
-	new sz_Message[192];
-	format_args(sz_Message, charsmax(sz_Message), 1);
-	message_begin(id == 0 ? MSG_ALL : MSG_ONE, 51, _, id);
-	write_byte(strlen(sz_Message) + 2);
-	write_byte(10);
-	write_string(sz_Message);
-	message_end();
 }
