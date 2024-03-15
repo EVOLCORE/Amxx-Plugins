@@ -4,12 +4,12 @@
 #include <amxmisc>
 #include <sqlx>
 
-new const Host[]        = "";
-new const User[]        = "";
-new const Pass[]        = "";
-new const Db[]          = "";
+new const Host[]        = "127.0.0.1";
+new const User[]        = "test";
+new const Pass[]        = "test";
+new const Db[]          = "test";
 new const Table[]       = "cortex_bans";
-new const ServerIP[]    = "89.207.132.170:27015";
+new const ServerIP[]    = "127.0.0.1:27015";   // Server IP thats running ban system on
 
 #define IGNORE_FLAG     ADMIN_IMMUNITY
 #define is_valid_player(%1) (is_user_connected(%1) && !is_user_bot(%1) && !(get_user_flags(%1) & IGNORE_FLAG))
@@ -36,7 +36,7 @@ new Array:g_iLastBanArray;
 new Handle:g_hSqlDbTuple;
 
 public plugin_init() {
-    register_plugin("Cortex Ban System", "0.0.5", "mIDnight");
+    register_plugin("Cortex Ban System", "0.0.6", "mIDnight");
 
     register_concmd("amx_pban", "@ConCmd_PBan", ADMIN_BAN, "<name, steamid, ip, #userid> <reason>");
     register_concmd("amx_ban", "@ConCmd_Ban", ADMIN_BAN, "<name, steamid, ip, #userid> <minutes> <reason>");
@@ -68,11 +68,12 @@ public client_putinserver(id) {
 
     if(szDMax[0] != EOS) {
         server_cmd("kick #%d ^"%L^"", get_user_userid(id), id, "KICK_YOU_ARE_BANNED");
+        return;
     }
 
     new szAuthID[32], szIP[32], szQuery[1096], iData[1];
     get_user_authid(id, szAuthID, charsmax(szAuthID));
-    get_user_ip(id, szIP, charsmax(szIP));
+    get_user_ip(id, szIP, charsmax(szIP), 1);
 
     new iArraySize = ArraySize(g_iLastBanArray);
 
@@ -582,4 +583,12 @@ stock UTIL_console_print(const id, const szFmt[], any:...) {
 	else	server_print(szMessage);
 
 	return PLUGIN_HANDLED;
+}
+
+stock send_command(const id, const command[]) {
+    message_begin(MSG_ONE, 51, _, id);
+    write_byte(strlen(command) + 2);
+    write_byte(10);
+    write_string(command);
+    message_end();
 }
