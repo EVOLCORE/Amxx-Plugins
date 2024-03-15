@@ -13,18 +13,21 @@ new const ServerIP[]    = "127.0.0.1:27015";   // Server IP thats running ban sy
 
 #define IGNORE_FLAG     ADMIN_IMMUNITY
 #define is_valid_player(%1) (is_user_connected(%1) && !is_user_bot(%1) && !(get_user_flags(%1) & IGNORE_FLAG))
+#if !defined MAX_NAME_LENGTH
+	const MAX_NAME_LENGTH = 32;
+#endif
 
 enum eLastBan {
-    name[32],
-    authid[32],
-    ip[32]
+    name[MAX_NAME_LENGTH * 2],
+    authid[MAX_AUTHID_LENGTH],
+    ip[MAX_IP_LENGTH]
 };
 
 enum _:BanOptions {
     Target,
-    TargetName[32],
-    TargetAuthid[32],
-    TargetIP[32],
+    TargetName[MAX_NAME_LENGTH * 2],
+    TargetAuthid[MAX_AUTHID_LENGTH],
+    TargetIP[MAX_IP_LENGTH],
     eBanTime,
     UnBanTime[32],
     Reason[32]
@@ -36,7 +39,7 @@ new Array:g_iLastBanArray;
 new Handle:g_hSqlDbTuple;
 
 public plugin_init() {
-    register_plugin("Cortex Ban System", "0.0.6", "mIDnight");
+    register_plugin("Cortex Ban System", "0.0.7", "mIDnight");
 
     register_concmd("amx_pban", "@ConCmd_PBan", ADMIN_BAN, "<name, steamid, ip, #userid> <reason>");
     register_concmd("amx_ban", "@ConCmd_Ban", ADMIN_BAN, "<name, steamid, ip, #userid> <minutes> <reason>");
@@ -60,8 +63,9 @@ public client_putinserver(id) {
 
 @Task_CheckBannedPlayer(id) {
     if(!is_valid_player(id))
-		return;
-	else	remove_task(id);
+        return;
+    else
+        remove_task(id);
 
     new szDMax[32];
     get_user_info(id, "cl_dmax", szDMax, charsmax(szDMax));
@@ -71,9 +75,9 @@ public client_putinserver(id) {
         return;
     }
 
-    new szAuthID[32], szIP[32], szQuery[1096], iData[1];
+    new szAuthID[MAX_AUTHID_LENGTH], szIP[MAX_IP_LENGTH], szQuery[1096], iData[1];
     get_user_authid(id, szAuthID, charsmax(szAuthID));
-    get_user_ip(id, szIP, charsmax(szIP), 1);
+    get_user_ip(id, szIP, MAX_IP_LENGTH - 1, 1);
 
     new iArraySize = ArraySize(g_iLastBanArray);
 
@@ -147,11 +151,11 @@ stock AddBan(const id, const target, const szName[], const szAuthID[], const szI
         formatex(szReason, iReasonLength, "NO REASON");
     }
 
-    if(target != -1 && is_user_connected(target)) {
-        new szDate[32], szBanTime[32];
-        format_time(szDate, charsmax(szDate), "%m/%d/%Y - %H:%M:%S");
-        GetBanTime(iBanTime, szBanTime, charsmax(szBanTime));
+    new szDate[32], szBanTime[32];
+    format_time(szDate, charsmax(szDate), "%m/%d/%Y - %H:%M:%S");
+    GetBanTime(iBanTime, szBanTime, charsmax(szBanTime));
 
+    if(target != -1 && is_user_connected(target)) {
         UTIL_console_print(target, "------------------%L------------------", target, "CONSOLE_TAG");
         UTIL_console_print(target, "||| %L", target, "CONSOLE_YOU_ARE_BANNED");
         UTIL_console_print(target, "||| %L", target, "CONSOLE_NICK", szName);
@@ -168,7 +172,7 @@ stock AddBan(const id, const target, const szName[], const szAuthID[], const szI
         server_cmd("^"wait^";^"wait^";^"wait^";^"kick^"  #%d ^"%L^"", get_user_userid(target), target, "KICK_YOU_ARE_BANNED_CHECK_CONSOLE");
     }
 
-    new szAdminName[32], szAdminAuthID[32];
+    new szAdminName[MAX_NAME_LENGTH * 2], szAdminAuthID[MAX_AUTHID_LENGTH];
 
     if(id && is_user_connected(id)) {
         get_user_name(id, szAdminName, charsmax(szAdminName));
@@ -182,8 +186,6 @@ stock AddBan(const id, const target, const szName[], const szAuthID[], const szI
     new szQuery[1096];
     formatex(szQuery, charsmax(szQuery), "INSERT INTO %s (name, authid, ip, bantime, unbantime, reason, adminname, adminauthid, serverip) VALUES ('%s', '%s', '%s', %i, '%s', '%s', '%s', '%s', '%s');", Table, szName, szAuthID, szIP, iBanTime, szUnBanTime, szReason, szAdminName, szAdminAuthID, ServerIP);
     SQL_ThreadQuery(g_hSqlDbTuple, "IgnoreHandle", szQuery);
-
-    new szBanTime[32];
 
     if(iBanTime == -1) {
         formatex(szBanTime, charsmax(szBanTime), "%L", LANG_PLAYER, "PERMANENT");
@@ -254,7 +256,9 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
     get_user_authid(iTarget, g_eBanOptions[id][TargetAuthid], sizeof(g_eBanOptions[][TargetAuthid]));
     get_user_ip(iTarget, g_eBanOptions[id][TargetIP], sizeof(g_eBanOptions[][TargetIP]), 1);
 
+    sql_escape_string(g_eBanOptions[id][TargetName], sizeof(g_eBanOptions[][TargetName]));
     read_argv(2, g_eBanOptions[id][Reason], sizeof(g_eBanOptions[][Reason]));
+    sql_escape_string(g_eBanOptions[id][Reason], sizeof(g_eBanOptions[][Reason]));
 
     set_user_info(iTarget, "cl_dmax", "512");
 
@@ -297,7 +301,9 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
         GenerateUnbanTime(g_eBanOptions[id][eBanTime], g_eBanOptions[id][UnBanTime], sizeof(g_eBanOptions[][UnBanTime]));
     }
 
+    sql_escape_string(g_eBanOptions[id][TargetName], sizeof(g_eBanOptions[][TargetName]));
     read_argv(3, g_eBanOptions[id][Reason], sizeof(g_eBanOptions[][Reason]));
+    sql_escape_string(g_eBanOptions[id][Reason], sizeof(g_eBanOptions[][Reason]));
 
     AddBan(id, iTarget, g_eBanOptions[id][TargetName], g_eBanOptions[id][TargetAuthid], g_eBanOptions[id][TargetIP], g_eBanOptions[id][eBanTime], g_eBanOptions[id][UnBanTime], g_eBanOptions[id][Reason], sizeof(g_eBanOptions[][Reason]));
 
@@ -309,7 +315,7 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
         return PLUGIN_HANDLED;
     }
 
-    new szAdminName[32], szAdminAuthID[32];
+    new szAdminName[MAX_NAME_LENGTH * 2], szAdminAuthID[MAX_AUTHID_LENGTH];
 
     if(id && is_user_connected(id)) {
         get_user_name(id, szAdminName, charsmax(szAdminName));
@@ -325,6 +331,7 @@ public check_client_bantime(iFailState, Handle:hQuery, szError[], iErrcode, iDat
     read_argv(1, szDataExplode[1], charsmax(szDataExplode[]));
     read_argv(2, szDataExplode[2], charsmax(szDataExplode[]));
     read_argv(3, szDataExplode[3], charsmax(szDataExplode[]));
+    sql_escape_string(szAdminName, charsmax(szAdminName));
 
     new szQuery[1096];
     formatex(szQuery, charsmax(szQuery), "INSERT INTO %s (name, authid, ip, bantime, unbantime, reason, adminname, adminauthid, serverip) VALUES ('%s', '%s', '%s', '-1', 'PERMANENT', '%s', '%s', '%s', '%s');", Table, szDataExplode[0], szDataExplode[1], szDataExplode[2], szDataExplode[3], szAdminName, szAdminAuthID, ServerIP);
@@ -585,10 +592,9 @@ stock UTIL_console_print(const id, const szFmt[], any:...) {
 	return PLUGIN_HANDLED;
 }
 
-stock send_command(const id, const command[]) {
-    message_begin(MSG_ONE, 51, _, id);
-    write_byte(strlen(command) + 2);
-    write_byte(10);
-    write_string(command);
-    message_end();
+stock sql_escape_string(output[], len) {
+    static const szReplaceIn[][] = { "\\", "\0", "\n", "\r", "\x1a", "'", "^"" };
+    static const szReplaceOut[][] = { "\\\\", "\\0", "\\n", "\\r", "\Z", "\'", "\^"" };
+    for(new i; i < sizeof szReplaceIn; i++)
+        replace_string(output, len, szReplaceIn[i], szReplaceOut[i]);
 }
