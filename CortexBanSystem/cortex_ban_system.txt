@@ -21,3 +21,20 @@ PERMANENT = Permanent
 MINUTES = %i minutes
 ADMIN_BANNED_PLAYER = ^4[HW] ^1Admin ^4%n has banned ^1[^3%s^1] on [^3%s^1] with reason ^1[^3%s^1]
 ADMIN_UNBANNED_PLAYER = Admin ^4%n^1 has unbanned [^3%s^1]
+
+BAN_SYSTEM_BAN_MENU_TITLE = Ban Menu: Select player to ban
+BAN_SYSTEM_REASON_TITLE = Ban Menu: Choose reason
+BAN_SYSTEM_BAN_TIME_TITLE = Ban Menu: Choose ban time
+BAN_SYSTEM_LAST_BAN_TITLE = Last Ban menu: Select player to ban
+
+BAN_SYSTEM_AIMBOT = Aimbot
+BAN_SYSTEM_WALLHACK = WallHack
+BAN_SYSTEM_SPEEDHACK = SpeedHack
+BAN_SYSTEM_ADVERTISING = Advertising
+BAN_SYSTEM_SWEARING = Swearing
+
+BAN_SYSTEM_5_MINS = 5 minutes
+BAN_SYSTEM_30_MINS = 30 minutes
+BAN_SYSTEM_60_MINS = 60 minutes
+BAN_SYSTEM_300_MINS = 300 minutes
+BAN_SYSTEM_PERMANENT = Permanently
