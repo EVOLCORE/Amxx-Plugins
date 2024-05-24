@@ -51,8 +51,8 @@ $cssUrl = "assets/css/styles.css?v=$version";
         <th scope="col">Nick</th>
         <th scope="col">SteamID</th>
         <th scope="col">IP</th>
-        <th scope="col">Time</th>
-        <th scope="col">Length</th>
+        <th scope="col">Ban Length</th>
+        <th scope="col">Date</th>
         <th scope="col">Reason</th>
         <th scope="col">Admin</th>
         <th scope="col">Admin SteamID</th>
@@ -91,22 +91,26 @@ try {
         throw new Exception("Connection failed: " . $conn->connect_error);
     }
 
-    // Function to sanitize user input
     function sanitizeInput($input)
     {
         return htmlspecialchars(trim($input), ENT_QUOTES, 'UTF-8');
     }
+	
+	function formatUnixTimestamp($timestamp)
+    {
+        return date('H:i:s d/m/Y', $timestamp);
+    }
 
     $searchTerm = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
 
-    $sqlCount = "SELECT COUNT(*) AS count FROM cortex_bans";
+    $sqlCount = "SELECT COUNT(*) AS count FROM $ban_table";
     $resultCount = $conn->query($sqlCount);
     $rowCount = $resultCount->fetch_assoc()['count'];
     $totalPages = ceil($rowCount / $resultsPerPage);
 
     $startLimit = ($currentPage - 1) * $resultsPerPage;
 
-    $sql = "SELECT * FROM cortex_bans WHERE name LIKE ? OR authid LIKE ? ORDER BY unbantime DESC LIMIT ?, ?";
+    $sql = "SELECT * FROM $ban_table WHERE player_nick LIKE ? OR player_id LIKE ? ORDER BY ban_length DESC LIMIT ?, ?";
     $stmt = $conn->prepare($sql);
     $searchPattern = "%$searchTerm%";
     $stmt->bind_param("ssii", $searchPattern, $searchPattern, $startLimit, $resultsPerPage);
@@ -120,32 +124,32 @@ try {
         $i = $startLimit + 1;
         while ($row = $result->fetch_assoc()) {
             $bans[] = [
-                'nick' => $row['name'],
-                'steamid' => $row['authid'],
-                'ip' => $row['ip'],
-                'time' => ($row['bantime'] == -1) ? 'PERMANENT' : formatTime($row['bantime']),
-                'length' => $row['unbantime'],
-                'reason' => $row['reason'],
-                'admin' => $row['adminname'],
-                'adminsteamid' => ($row['adminauthid'] == 'PANEL') ? 'NONE' : $row['adminauthid'],
-                'server' => $row['serverip'],
+                'nick' => $row['player_nick'],
+                'steamid' => $row['player_id'],
+                'ip' => $row['player_ip'],
+                'banlength' => ($row['ban_length'] == 0) ? 'PERMANENT' : formatTime($row['ban_length']),
+                'date' => $row['ban_created'],
+                'reason' => $row['ban_reason'],
+                'admin' => $row['admin_nick'],
+                'adminsteamid' => ($row['admin_id'] == 'SERVER') ? 'NONE' : $row['admin_id'],
+                'server' => $row['server_ip'],
             ];
 
-            $countryCode = getCountryFromIP($row['ip']);
+            $countryCode = getCountryFromIP($row['player_ip']);
             $countryFlagPath = "/bans/assets/images/flags/{$countryCode}.png";
             ?>
             <tr>
                 <th scope='row'><?= $i ?></th>
-                <td><?= $row['name'] ?></td>
-                <td><?= $row['authid'] ?></td>
-                <td><img src='<?= $countryFlagPath ?>' class='flag'><?= $row['ip'] ?></td>
-				<td><?= ($row['bantime'] == -1) ? 'PERMANENT' : formatTime($row['bantime']) ?></td>
-                <td><?= $row['unbantime'] ?></td>
-                <td><?= $row['reason'] ?></td>
-                <td><?= $row['adminname'] ?></td>
-                <td><?= $row['adminauthid'] ?></td>
-                <td><?= $row['serverip'] ?></td>
-                <td class="bg-danger unban-btn" data-steamid="<?= $row['authid'] ?>">Unban</td>
+                <td><?= $row['player_nick'] ?></td>
+                <td><?= $row['player_id'] ?></td>
+                <td><img src='<?= $countryFlagPath ?>' class='flag'><?= $row['player_ip'] ?></td>
+				<td><?= ($row['ban_length'] == 0) ? 'PERMANENT' : formatTime($row['ban_length']) ?></td>
+                <td><?= formatUnixTimestamp($row['ban_created']) ?></td>
+                <td><?= $row['ban_reason'] ?></td>
+                <td><?= $row['admin_nick'] ?></td>
+                <td><?= $row['admin_id'] ?></td>
+                <td><?= $row['server_ip'] ?></td>
+                <td class="bg-danger unban-btn" data-steamid="<?= $row['player_id'] ?>">Unban</td>
             </tr>
             <?php
             $i++;
@@ -155,7 +159,7 @@ try {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['unbanSteamID'])) {
         $unbanSteamID = sanitizeInput($_POST['unbanSteamID']);
 
-        $sql = "DELETE FROM cortex_bans WHERE authid = ?";
+        $sql = "DELETE FROM $ban_table WHERE player_id = ?";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("s", $unbanSteamID);
         $stmt->execute();
@@ -398,7 +402,6 @@ $(document).ready(function () {
         unbanPlayer(steamid);
     });
 
-    // Regular refresh
     setInterval(function () {
         loadData();
     }, 5000);
