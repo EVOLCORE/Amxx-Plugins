@@ -295,7 +295,7 @@ public plugin_end() {
 }
 
 @task_SQL_CheckPlayer(id) {
-    new data[2];
+    new data[2], szQuery[800];
     if(id > 32) {
         id -= TASK_DOUBLECHECK;
         data[1] = 1;
@@ -306,9 +306,10 @@ public plugin_end() {
 
     data[0] = id;
 
-    SQL_ThreadQuery(g_hSqlDbTuple, "SQL_CheckProtectorHandle", 
-        fmt("SELECT `c_code`, `vpn_proxy` FROM `%s` WHERE `uid`=%d AND `server`='%s';", 
-        g_eCvar[g_iSqlCheckTable], get_user_userid(id), g_eCvar[g_iServerIP]), data, sizeof(data));
+    formatex(szQuery, charsmax(szQuery), "SELECT `c_code`, `vpn_proxy` FROM `%s` WHERE `uid`=%d AND `server`='%s';", 
+            g_eCvar[g_iSqlCheckTable], get_user_userid(id), g_eCvar[g_iServerIP]);
+
+    SQL_ThreadQuery(g_hSqlDbTuple, "SQL_CheckProtectorHandle", szQuery, data, sizeof(data));       
 }
 
 public SQL_CheckProtectorHandle(failState, Handle:query, error[], errNum, data[], dataSize) {
@@ -736,7 +737,7 @@ UnbanPlayer(id, target[MAX_NAME_LENGTH], type) {
             new ban_reason[MAX_REASON_LENGTH];
             read_argv(3, ban_reason, charsmax(ban_reason));
             BanPlayer(id, pid, ban_length, ban_reason);
-            console_print(id, "%L", id, "CONSOLE_SUCCESS_BANNED", pid);
+            console_print(id, "%L", id, "CONSOLE_SUCCESS_BANNED", id);
         } else {
             console_print(id, "%L", id, "CONSOLE_HAS_IMMUNITY", id);
         }
