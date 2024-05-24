@@ -1,40 +1,31 @@
 [en]
-KICK_YOU_ARE_BANNED = You are banned from this server.
+CONSOLE_TAG = Cortex Bans
+CONSOLE_YOU_ARE_BANNED = You have been banned from this server.
+CONSOLE_NICK = Nick:
+CONSOLE_STEAMID = SteamID:
+CONSOLE_IP = IP:
+CONSOLE_REASON = Reason:
+CONSOLE_LENGTH = Ban Length:
+CONSOLE_PERMANENT = Permanent.
+CONSOLE_TIMELEFT = Timeleft:
+CONSOLE_BY_ADMIN = Admin:
+CONSOLE_SERVERNAME = Server Name:
+CONSOLE_FOR_UNBAN = For unban vist:
+CONSOLE_UNBAN_ARGS = [CortexBans] Couldn't understand type.
+CONSOLE_SUCCESS_BANNED = [CortexBans] Player %n successfully banned.
+CONSOLE_HAS_IMMUNITY = [CortexBans] Player has immunity!
+CONSOLE_INVALID_ARG = [CortexBans] Invalid argument. Must be IP or SteamID.
+CONSOLE_PLAYER_NOT_FOUND = [CortexBans] Player not found!
+CONSOLE_PERFORM_OPERATION = [CortexBans] Cannot perform this operation. Retry in a few seconds.
 
-CONSOLE_TAG = HyperWorld Bans
-CONSOLE_YOU_ARE_BANNED = You are banned
-CONSOLE_NICK = Nick: %s
-CONSOLE_STEAMID = SteamID : %s
-CONSOLE_IP = IP : %s
-CONSOLE_BY_ADMIN = By Admin: %n
-CONSOLE_REASON = Reason: %s
-CONSOLE_BAN_DATE = Ban Created : %s
-CONSOLE_BAN_TIME = For Length: %s
-CONSOLE_UNBAN_TIME = Will Expire: %s
-CONSOLE_DATE = Date: %s
-CONSOLE_FOR_UNBAN = For unban vist: https://test.com/
-KICK_YOU_ARE_BANNED_CHECK_CONSOLE = You are banned from this server. Check your console.
-
-ADMIN_CLEAR_BANS = ^4[HW] ^1Admin ^4%n^1, has cleaned whole ban list.
-
-PERMANENT = Permanent
-MINUTES = %i minutes
-ADMIN_BANNED_PLAYER = ^4[HW] ^1Admin ^4%n has banned ^1[^3%s^1] on [^3%s^1] with reason ^1[^3%s^1]
-ADMIN_UNBANNED_PLAYER = Admin ^4%n^1 has unbanned [^3%s^1]
+ADMIN_BANNED_PLAYER = ^4[CortexBans] ^1Admin ^4%s ^1has banned: [^3%n^1] time: [^3%s^1] reason: ^1[^3%s^1]
+PLAYER_LEFT_GAME = ^4[CortexBans] ^1Player left. You can use ^3amx_offbanmenu^1 instead.
+ADMIN_CLEAR_BANS = ^4[CortexBans] ^1Admin ^4%n^1, has cleaned whole ban list.
 
 BAN_SYSTEM_BAN_MENU_TITLE = Ban Menu: Select player to ban
-BAN_SYSTEM_REASON_TITLE = Ban Menu: Choose reason
-BAN_SYSTEM_BAN_TIME_TITLE = Ban Menu: Choose ban time
-BAN_SYSTEM_LAST_BAN_TITLE = Last Ban menu: Select player to ban
+BAN_SYSTEM_CONFIRM_TITLE = Ban Menu: Confirm Ban
+BAN_SYSTEM_OFFBAN_TITLE = Ban Menu: Offline Ban
+BAN_SYSTEM_REASON_TITLE = Ban Menu: Reason
 
-BAN_SYSTEM_AIMBOT = Aimbot
-BAN_SYSTEM_WALLHACK = WallHack
-BAN_SYSTEM_SPEEDHACK = SpeedHack
-BAN_SYSTEM_ADVERTISING = Advertising
-BAN_SYSTEM_SWEARING = Swearing
-
-BAN_SYSTEM_5_MINS = 5 minutes
-BAN_SYSTEM_30_MINS = 30 minutes
-BAN_SYSTEM_60_MINS = 60 minutes
-BAN_SYSTEM_300_MINS = 300 minutes
-BAN_SYSTEM_PERMANENT = Permanently
+KICK_CANNOT_VERIFY = Cannot verify data.
+KICK_VPN_DETECTED = VPN detected.
