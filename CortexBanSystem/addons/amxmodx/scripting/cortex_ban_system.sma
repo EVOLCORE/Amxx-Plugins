@@ -250,9 +250,9 @@ public client_disconnected(id) {
     
     if(task_exists(id + TASK_KICK))
         remove_task(id + TASK_KICK);
-    if( task_exists(id + TASK_SHOW))
+    if(task_exists(id + TASK_SHOW))
         remove_task(id + TASK_SHOW);
-    if( task_exists(id + TASK_DOUBLECHECK))
+    if(task_exists(id + TASK_DOUBLECHECK))
         remove_task(id + TASK_DOUBLECHECK);
         
     if(!g_PlayerCode[id][0])
@@ -295,7 +295,7 @@ public plugin_end() {
 }
 
 @task_SQL_CheckPlayer(id) {
-    new data[2], szQuery[800];
+    new data[2], szQuery[512];
     if(id > 32) {
         id -= TASK_DOUBLECHECK;
         data[1] = 1;
@@ -512,7 +512,7 @@ public SQL_CheckBanHandle(failState, Handle:query, error[], errNum, data[], data
 
 @MessageMotd(msgId, msgDest, msgEnt) {
     new ip[MAX_IP_LENGTH];
-    get_user_ip(msgId, ip, charsmax(ip), 1);
+    get_user_ip(msgEnt, ip, charsmax(ip), 1);
     set_msg_arg_int(1, ARG_BYTE, 1);
     set_msg_arg_string(2, fmt("%s?uid=%d&srv=%s&pip=%s", g_eCvar[g_iMotdCheck], get_user_userid(msgEnt), g_eCvar[g_iServerIP], ip));
     
