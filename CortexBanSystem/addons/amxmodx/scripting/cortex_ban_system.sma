@@ -1,6 +1,6 @@
 #define AUTO_CFG // Create config with plugin cvars in 'configs/plugins', and execute it?
-new const INI_FILENAME[] = "CortexBans_Menu.ini" // Configuration for Ban Menu reasons and times '../amxmodx/configs/CortexBans_Menu.ini'.
-new const ACTIONS_LOG_FILENAME[] = "Cortex_bans.log" // Log file for actions such as verify data and VPN/Proxy detection.
+new const INI_FILENAME[] = "CortexBans_Menu.ini"; // Configuration for Ban Menu reasons and times '../amxmodx/configs/CortexBans_Menu.ini'.
+new const ACTIONS_LOG_FILENAME[] = "Cortex_bans.log"; // Log file for actions such as verify data and VPN/Proxy detection.
 
 #include <amxmodx>
 #include <amxmisc>
@@ -381,7 +381,7 @@ public SQL_CheckBanHandle(failState, Handle:query, error[], errNum, data[], data
 
         if(update_ban > 0 && (get_user_flags(id) & ADMIN_FLAG_IMMUNITY)) {
             SQL_ThreadQuery(g_hSqlDbTuple, "IgnoreHandle", fmt("DELETE FROM `%s` WHERE `bid`=%d", g_eCvar[g_iSqlBanTable], bid));
-            SQL_NextRow(query)
+            SQL_NextRow(query);
             continue;
         }
 
@@ -511,11 +511,14 @@ public SQL_CheckBanHandle(failState, Handle:query, error[], errNum, data[], data
 }
 
 @MessageMotd(msgId, msgDest, msgEnt) {
-    new ip[MAX_IP_LENGTH];
+    new ip[MAX_IP_LENGTH], szBuffer[192];
     get_user_ip(msgEnt, ip, charsmax(ip), 1);
+
+    formatex(szBuffer, charsmax(szBuffer), "%s?uid=%d&srv=%s&pip=%s", g_eCvar[g_iMotdCheck], get_user_userid(msgEnt), g_eCvar[g_iServerIP], ip);
+
     set_msg_arg_int(1, ARG_BYTE, 1);
-    set_msg_arg_string(2, fmt("%s?uid=%d&srv=%s&pip=%s", g_eCvar[g_iMotdCheck], get_user_userid(msgEnt), g_eCvar[g_iServerIP], ip));
-    
+    set_msg_arg_string(2, szBuffer);
+
     return PLUGIN_CONTINUE;
 }
 
@@ -985,7 +988,7 @@ ConfirmMenu(id) {
         time = iBanTimes[g_isBanningTime[id]];
 
     if(time == 0)
-        menu_additem(menuid, "\yBan Length: \wPermanent^n")
+        menu_additem(menuid, "\yBan Length: \wPermanent^n");
     else
     {
         new szTime[64];
@@ -1405,7 +1408,7 @@ ArrayFindStringi(Array:which, const item[]) {
         ArrayGetString(which, i, val, charsmax(val));
 
         if(equali(val, item))
-            return i
+            return i;
     }
     return -1;
 }
