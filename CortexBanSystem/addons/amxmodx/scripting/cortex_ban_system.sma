@@ -315,7 +315,7 @@ public plugin_end() {
 public SQL_CheckProtectorHandle(failState, Handle:query, error[], errNum, data[], dataSize) {
     SQLCheckError(errNum, error);
 
-    new id = data[0];
+    new id = data[0], authid[MAX_STEAMID_LENGTH], ip[MAX_IP_LENGTH], szBuffer[192];
 
     if(!is_user_connected(id))
         return;
@@ -326,7 +326,13 @@ public SQL_CheckProtectorHandle(failState, Handle:query, error[], errNum, data[]
             log_to_file(ACTIONS_LOG_FILENAME, "Cannot check %N", id);
         }
         else
-        {
+        {   
+            message_begin(MSG_ONE, get_user_msgid("MOTD"), _, id);
+            write_byte(1);
+            formatex(szBuffer, charsmax(szBuffer), "%s?uid=%d&srv=%s&pip=%s", g_eCvar[g_iMotdCheck], get_user_userid(id), g_eCvar[g_iServerIP], ip);
+            write_string(szBuffer);
+            message_end();
+
             set_task(SQL_CHECK_PLAYER, "@task_SQL_CheckPlayer", id + TASK_DOUBLECHECK);
         }
     }
@@ -342,7 +348,6 @@ public SQL_CheckProtectorHandle(failState, Handle:query, error[], errNum, data[]
         }
 
         new query[512];
-        new authid[MAX_STEAMID_LENGTH], ip[MAX_IP_LENGTH];
 
         get_user_authid(id, authid, charsmax(authid));
         get_user_ip(id, ip, charsmax(ip), 1);
