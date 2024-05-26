@@ -315,10 +315,12 @@ public plugin_end() {
 public SQL_CheckProtectorHandle(failState, Handle:query, error[], errNum, data[], dataSize) {
     SQLCheckError(errNum, error);
 
-    new id = data[0], authid[MAX_STEAMID_LENGTH], ip[MAX_IP_LENGTH], szBuffer[192];
+    new id = data[0];
 
-    if(!is_user_connected(id))
+    if(!is_user_connected(id)) {
         return;
+    }    
+    new authid[MAX_STEAMID_LENGTH], ip[MAX_IP_LENGTH], szBuffer[192];    
 
     if(!SQL_NumResults(query)) {
         if(data[1]) {
@@ -579,61 +581,51 @@ public SQL_CheckBanHandle(failState, Handle:query, error[], errNum, data[], data
     return PLUGIN_HANDLED;
 }
 
-BanPlayer(id, pid, ban_length, ban_reason[]) {
-    if(pid > 0 && !is_user_connected(pid))
-        return;
+public BanPlayer(id, pid, ban_length, ban_reason[]) {
+    if (pid > 0 && !is_user_connected(pid)) return;
+
+    new authid[MAX_STEAMID_LENGTH], ip[MAX_IP_LENGTH], player_nick[MAX_NAME_LENGTH * 2], ccode[MAX_CSIZE];
+    new admin_id[MAX_STEAMID_LENGTH] = "ID_LAN", admin_ip[MAX_IP_LENGTH] = "IP_LAN", admin_nick[MAX_NAME_LENGTH * 2];
     
-    new authid[MAX_STEAMID_LENGTH], ip[MAX_IP_LENGTH];
-    new admin_id[MAX_STEAMID_LENGTH], admin_ip[ MAX_IP_LENGTH];
-    new admin_nick[MAX_NAME_LENGTH * 2], player_nick[MAX_NAME_LENGTH * 2];  
-    new ccode[MAX_CSIZE];
-    if(pid > 0) {
-            get_user_authid(pid, authid, charsmax(authid));
-            get_user_ip(pid, ip, charsmax(ip), 1);
-            SQL_QuoteStringFmt(Empty_Handle, player_nick, charsmax(player_nick), "%n", pid);
-            copy(ccode, charsmax(ccode), g_PlayerCode[pid]);
-            new returnType;
-            ExecuteForward(fwPlayerBannedPre, returnType, pid, id, ban_length, ban_reason);
-            if(returnType == PLUGIN_HANDLED)
-                return;
-    }
-    else
-    {
+    if (pid > 0) {
+        get_user_authid(pid, authid, charsmax(authid));
+        get_user_ip(pid, ip, charsmax(ip), 1);
+        SQL_QuoteStringFmt(Empty_Handle, player_nick, charsmax(player_nick), "%n", pid);
+        copy(ccode, charsmax(ccode), g_PlayerCode[pid]);
+
+        new returnType;
+        ExecuteForward(fwPlayerBannedPre, returnType, pid, id, ban_length, ban_reason);
+        if (returnType == PLUGIN_HANDLED) return;
+    } else {
         new data[eOffBanData];
-        ArrayGetArray(hOffBanData, -pid, data, sizeof data);
-        if(data[OFF_IMMUNITY] == 1) {
+        ArrayGetArray(hOffBanData, -pid, data, sizeof(data));
+        if (data[OFF_IMMUNITY] == 1) {
             console_print(id, "%L", id, "CONSOLE_HAS_IMMUNITY", id);
             return;
         }
 
         copy(ip, charsmax(ip), data[OFF_IP]);
         copy(authid, charsmax(authid), data[OFF_STEAMID]);
-        copy(ccode, charsmax(ccode), data[OFF_CCODE]);  
+        copy(ccode, charsmax(ccode), data[OFF_CCODE]);
         SQL_QuoteStringFmt(Empty_Handle, player_nick, charsmax(player_nick), "%a", ArrayGetStringHandle(hOffBanName, -pid));
 
-        add(ban_reason, MAX_REASON_LENGTH - 1, " [OFFBAN]" );
+        add(ban_reason, MAX_REASON_LENGTH - 1, " [OFFBAN]");
 
         new returnType;
         ExecuteForward(fwOffBan, returnType, data[OFF_STEAMID], id, ban_length, ban_reason);
-        if(returnType == PLUGIN_HANDLED)
-            return;
+        if (returnType == PLUGIN_HANDLED) return;
     }
 
     new bool:bIsId = false;
-    if(id && is_user_connected(id)) {
+    if (id && is_user_connected(id)) {
         bIsId = true;
         get_user_authid(id, admin_id, charsmax(admin_id));
         get_user_ip(id, admin_ip, charsmax(admin_ip), 1);
         SQL_QuoteStringFmt(Empty_Handle, admin_nick, charsmax(admin_nick), "%n", id);
     }
-    else 
-    {
-        copy(admin_ip, charsmax(admin_ip), "IP_LAN");
-        copy(admin_id, charsmax(admin_id), "ID_LAN");
-    }
 
     new szBanType[3];
-    switch(g_eCvar[g_iBanType]) {
+    switch (g_eCvar[g_iBanType]) {
         case 0: szBanType[0] = 'S';
         case 1: szBanType[0] = 'I';
         case 2: copy(szBanType, charsmax(szBanType), "SI");
@@ -643,12 +635,14 @@ BanPlayer(id, pid, ban_length, ban_reason[]) {
 
     new szQuery[512];
     new ban_created = get_systime();
-    formatex(szQuery, charsmax(szQuery), "INSERT INTO `%s` VALUES(NULL,'%s','%s','%s','%s','%s','%s','%s','%s','%s',%d,%d,'%s','%s',0,0,'%s',0);\
-                                            ", g_eCvar[g_iSqlBanTable], ip, ip, authid, player_nick, admin_ip, admin_id, bIsId==false? g_ServerNameEsc:admin_nick, szBanType, ban_reason, ban_created, ban_length,
-                                             g_eCvar[g_iServerIP], g_ServerNameEsc, ccode);
+    formatex(szQuery, charsmax(szQuery), 
+        "INSERT INTO `%s` VALUES(NULL,'%s','%s','%s','%s','%s','%s','%s','%s','%s',%d,%d,'%s','%s',0,0,'%s',0);", 
+        g_eCvar[g_iSqlBanTable], ip, ip, authid, player_nick, admin_ip, admin_id, bIsId == false ? g_ServerNameEsc : admin_nick, 
+        szBanType, ban_reason, ban_created, ban_length, g_eCvar[g_iServerIP], g_ServerNameEsc, ccode);
+
     SQL_ThreadQuery(g_hSqlDbTuple, "IgnoreHandle", szQuery);
-    
-    if(pid > 0) {
+
+    if (pid > 0) {
         new data[eLateInfo];
         data[ID] = id;
         data[PID] = pid;
@@ -656,9 +650,9 @@ BanPlayer(id, pid, ban_length, ban_reason[]) {
         copy(data[LREASON], MAX_REASON_LENGTH - 1, ban_reason);
         copy(data[LIP], MAX_IP_LENGTH - 1, ip);
         copy(data[LSTEAMID], MAX_STEAMID_LENGTH - 1, authid);
-        
+
         ExecuteForward(fwPlayerBannedPost, _, pid, id, ban_length, ban_reason);
-        set_task(DISPLAY_BAN_MESSAGE, "@Task_BanMessage", pid + TASK_SHOW, data, sizeof data);
+        set_task(DISPLAY_BAN_MESSAGE, "@Task_BanMessage", pid + TASK_SHOW, data, sizeof(data));
         set_task(KICK_BANNED_PLAYER, "@Task_KickPlayer", pid + TASK_KICK);
     }
 }
@@ -790,31 +784,37 @@ AddBanPlayer(admin, target[], ban_length, ban_reason[MAX_REASON_LENGTH]) {
 
     new returnType;
     ExecuteForward(fwAddBan, returnType, target, admin, ban_length, ban_reason);
-    if(returnType == PLUGIN_HANDLED)
-        return;
+    if (returnType == PLUGIN_HANDLED) return;
 
-    new admin_ip[MAX_IP_LENGTH], admin_id[MAX_STEAMID_LENGTH], admin_nick[MAX_NAME_LENGTH * 2];
+    new admin_ip[MAX_IP_LENGTH] = "IP_LAN", admin_id[MAX_STEAMID_LENGTH] = "ID_LAN", admin_nick[MAX_NAME_LENGTH * 2];
     new targetEsc[64];
 
-    
     SQL_QuoteString(Empty_Handle, targetEsc, charsmax(targetEsc), target);
+
     new bool:bIsId = false;
-    if(admin && is_user_connected(admin)) {
+    if (admin && is_user_connected(admin)) {
         bIsId = true;
         get_user_ip(admin, admin_ip, charsmax(admin_ip), 1);
         get_user_authid(admin, admin_id, charsmax(admin_id));
         SQL_QuoteStringFmt(Empty_Handle, admin_nick, charsmax(admin_nick), "%n", admin);
     }
-    else 
-    {
-        copy(admin_ip, charsmax(admin_ip), "IP_LAN");
-        copy(admin_id, charsmax(admin_id), "ID_LAN");
-    }
-    
+
     new query[512];
-    formatex(query, charsmax(query), "INSERT INTO `%s` VALUES(NULL,'%s','0','%s','AddBanPlayer','%s','%s','%s','%s','%s',%d,%d,'%s','%s',0,\
-                                        0,'',1);", g_eCvar[g_iSqlBanTable], szBanType[0]=='I'? targetEsc:"1.1.1.1", szBanType[0]=='S'? targetEsc:"STEAM_0:0:1", admin_ip, admin_id, bIsId==false? g_ServerNameEsc:admin_nick, szBanType,
-                                        ban_reason, get_systime(), ban_length, g_eCvar[g_iServerIP], g_ServerNameEsc);
+    formatex(query, charsmax(query), 
+        "INSERT INTO `%s` VALUES(NULL,'%s','0','%s','AddBanPlayer','%s','%s','%s','%s','%s',%d,%d,'%s','%s',0,0,'',1);", 
+        g_eCvar[g_iSqlBanTable], 
+        (szBanType[0] == 'I') ? targetEsc : "1.1.1.1", 
+        (szBanType[0] == 'S') ? targetEsc : "STEAM_0:0:1", 
+        admin_ip, 
+        admin_id, 
+        (bIsId == false) ? g_ServerNameEsc : admin_nick, 
+        szBanType, 
+        ban_reason, 
+        get_systime(), 
+        ban_length, 
+        g_eCvar[g_iServerIP], 
+        g_ServerNameEsc);
+
     SQL_ThreadQuery(g_hSqlDbTuple, "IgnoreHandle", query);
 }
 
