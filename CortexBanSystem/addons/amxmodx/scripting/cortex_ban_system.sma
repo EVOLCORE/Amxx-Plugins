@@ -282,7 +282,6 @@ public client_disconnected(id) {
     g_PlayerCode[id][0] = 0;
 }
 
-
 public plugin_end() {
     SQL_ThreadQuery(g_hSqlDbTuple, "IgnoreHandle", fmt("DELETE FROM `%s`", g_eCvar[g_iSqlCheckTable]));
 
@@ -414,7 +413,6 @@ public SQL_CheckBanHandle(failState, Handle:query, error[], errNum, data[], data
             add(szQuery, charsmax(szQuery), fmt(",c_code='%s'", g_PlayerCode[id]));
             copy(ccode, charsmax(ccode), g_PlayerCode[id]);
         }
-
 
         if(update_ban == 1) {
             new nick[MAX_NAME_LENGTH * 2], authid[MAX_STEAMID_LENGTH];
@@ -825,7 +823,7 @@ AddBanPlayer(admin, target[], ban_length, ban_reason[MAX_REASON_LENGTH]) {
 
     client_print_color(0, 0, "%L", LANG_PLAYER, "ADMIN_CLEAR_BANS", id);
     new query[512];
-    formatex(query, charsmax(query), "DELETE FROM %s;", g_eCvar[g_iSqlBanTable]);
+    formatex(query, charsmax(query), "DELETE FROM `%s`", g_eCvar[g_iSqlBanTable]);
     SQL_ThreadQuery(g_hSqlDbTuple, "IgnoreHandle", query);
     return PLUGIN_HANDLED;
 }
@@ -835,7 +833,6 @@ AddBanPlayer(admin, target[], ban_length, ban_reason[MAX_REASON_LENGTH]) {
         return PLUGIN_HANDLED;
     
     new ban_length = read_argv_int(2);
-
     new target[MAX_NAME_LENGTH];
 
     read_argv(1, target, charsmax(target));
@@ -1006,33 +1003,31 @@ ConfirmMenu(id) {
     menu_display(id, menuid);
 }
 
-public ConfirmHandler( id, menuid, item ) {
-    if(is_user_connected(id) && item >= 0 && g_IsBanning[id]) {
-        switch(item) {
+public ConfirmHandler(id, menuid, item) {
+    if (is_user_connected(id) && item >= 0 && g_IsBanning[id]) {
+        switch (item) {
             case 0: {
-                if(check_bit(bIsOffBan, id))
+                if (check_bit(bIsOffBan, id))
                     OffBanMenu(id);
                 else
                     OpenMainMenu(id);
             }
-            case 1: 
-                menu_display(id, g_ReasonsMenu);
-            case 2: 
-                menu_display(id, g_BanTimesMenu);
+            case 1: menu_display(id, g_ReasonsMenu);
+            case 2: menu_display(id, g_BanTimesMenu);
             case 3: {
                 new time;
-                if(check_bit(bIsUsingCustomTime, id))
+                if (check_bit(bIsUsingCustomTime, id))
                     time = g_isBanningTime[id];
-                else if(check_bit(bIsUsingBanReasonTime, id))
+                else if (check_bit(bIsUsingBanReasonTime, id))
                     time = g_ReasonBanTimes[g_isBanningTime[id]];
                 else
                     time = iBanTimes[g_isBanningTime[id]];
-                
-                if(check_bit(bIsOffBan, id))
+
+                if (check_bit(bIsOffBan, id))
                     BanPlayer(id, -(g_IsBanning[id] - 1), time, g_isBanningReason[id]);
                 else
-                    BanPlayer(id, find_player("k", g_IsBanning[id]), time, g_isBanningReason[id]);  
-                
+                    BanPlayer(id, find_player("k", g_IsBanning[id]), time, g_isBanningReason[id]);
+
                 clear_bit(bIsUsingCustomTime, id);
                 clear_bit(bIsUsingBanReasonTime, id);
                 clear_bit(bIsOffBan, id);
@@ -1040,10 +1035,8 @@ public ConfirmHandler( id, menuid, item ) {
                 g_isBanningTime[id] = 0;
                 g_isBanningReason[id][0] = 0;
             }
-        }   
-    }
-    else
-    {
+        }
+    } else {
         clear_bit(bIsUsingBanReasonTime, id);
         clear_bit(bIsUsingCustomTime, id);
         clear_bit(bIsOffBan, id);
