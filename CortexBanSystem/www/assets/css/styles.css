@@ -1,6 +1,46 @@
+/* styles.css */
+
 body {
     background-color: #2c3034;
     overflow-x: hidden;
+}
+
+.modal-label {
+    color: #6c757d;
+}
+
+.form-control {
+    color: #6c757d;
+    border-color: #6c757d;
+}
+
+.form-control::placeholder {
+    color: #6c757d;
+}
+
+.modal-content {
+    background-color: #2c3034;
+    color: #6c757d;
+    font-weight: bold;
+}
+
+.modal-title {
+    position: absolute;
+    left: 10px;
+}
+
+.close {
+    color: #6c757d;
+    font-size: 30px;
+    font-weight: bold;
+    opacity: 1;
+}
+
+.close:hover,
+.close:focus {
+    color: #fff;
+    text-decoration: none;
+    outline: none;
 }
 
 .logo {
@@ -60,6 +100,7 @@ body {
     cursor: pointer;
     transition: transform 0.1s ease-in-out;
     display: flex;
+    font-family: 'Verdana', sans-serif;
     align-items: center;
     justify-content: center;
     height: 52px;
@@ -83,7 +124,7 @@ body {
 
 .icon-link-hover:hover {
     color: #3498db;
-    }
+}
 
 th {
     font-size: 18px;
@@ -168,25 +209,25 @@ body::-webkit-scrollbar-thumb {
 
 @media (max-width: 768px) {
     .redot {
-        top: 46%; /* Adjust the top value for red dot positioning */
+        top: 46%;
     }
 
     .author {
-        padding: 10px; /* Adjust the padding for .author */
-        padding-left: 15px; /* Adjust the left padding for .author */
-        font-size: 18px !important; /* Adjust the font size for better readability */
+        padding: 10px;
+        padding-left: 15px;
+        font-size: 18px !important;
     }
 
     th {
-        font-size: 14px; /* Adjust the font size for th */
+        font-size: 14px;
     }
 
     .flag {
-        max-width: 15px; /* Adjust the max-width for .flag */
-        max-height: 12px; /* Adjust the max-height for .flag */
+        max-width: 15px;
+        max-height: 12px;
     }
 
     .btn {
-        font-size: 20px; /* Adjust the font size for .btn */
+        font-size: 20px;
     }
 }
