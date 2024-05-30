@@ -13,8 +13,7 @@ new const ACTIONS_LOG_FILENAME[] = "Cortex_bans.log"; // Log file for actions su
 #define clear_bit(%1,%2)    (%1 &= ~(1<<(%2&31)))
 #define check_bit(%1,%2)    (%1 & (1<<(%2&31)))
 
-#define MENU_TITLE(%1,%2,%3) (formatex(%1, charsmax(%1), %2, %3))
-#define MENU_ITEM(%1,%2,%3) (formatex(%1, charsmax(%1), %2, %3))
+#define MENU_FORMATEX(%1,%2,%3) (formatex(%1, charsmax(%1), %2, %3))
 
 #define SQL_CHECK_PLAYER 3.5
 #define SQL_INIT 0.1
@@ -166,26 +165,26 @@ ReadAndMakeMenus() {
     }
     fclose(fp);
     new szBuffer[128];
-    MENU_TITLE(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_REASON_TITLE");
+    MENU_FORMATEX(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_REASON_TITLE");
     g_ReasonsMenu = menu_create(szBuffer, "ReasonHandler");
 
-    MENU_ITEM(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_REASON_CUSTOM");
+    MENU_FORMATEX(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_REASON_CUSTOM");
     menu_additem(g_ReasonsMenu, szBuffer);
     
     
     for(new i; i < iPosReason; i++)
         menu_additem(g_ReasonsMenu, reasons[i]);
     
-    MENU_TITLE(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_LENGTH_TITLE");
+    MENU_FORMATEX(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_LENGTH_TITLE");
     g_BanTimesMenu = menu_create(szBuffer, "BanLengthHandler");
 
-    MENU_ITEM(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_TIME_CUSTOM");
+    MENU_FORMATEX(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_TIME_CUSTOM");
     menu_additem(g_BanTimesMenu, szBuffer);
 
     new szTime[64];
     for(new i; i < iPosBanTimes; i++) {
         if(iBanTimes[i] == 0) {
-            MENU_ITEM(szTime, "%L", LANG_PLAYER, "BAN_SYSTEM_TIME_PERMANENT");
+            MENU_FORMATEX(szTime, "%L", LANG_PLAYER, "BAN_SYSTEM_TIME_PERMANENT");
         } else {
             get_time_length(0, iBanTimes[i], timeunit_minutes, szTime, charsmax(szTime));
         }
@@ -894,7 +893,7 @@ GetClientTeamName(const pPlayer, szTeamName[], iTeamNameLength) {
 
 OpenMainMenu(id) {
     new szBuffer[128];
-    MENU_TITLE(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_BAN_MENU_TITLE");
+    MENU_FORMATEX(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_BAN_MENU_TITLE");
     new menuid = menu_create(szBuffer, "MainMenuHandler");
 
     new players[32], num;
@@ -962,7 +961,7 @@ public ReasonHandler(id, menuid, item) {
 
 ConfirmMenu(id) {
     new szBuffer[128];
-    MENU_TITLE(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_CONFIRM_TITLE");
+    MENU_FORMATEX(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_CONFIRM_TITLE");
     new menuid = menu_create(szBuffer, "ConfirmHandler");
     
     new pid;
@@ -983,13 +982,13 @@ ConfirmMenu(id) {
     }
 
     if(check_bit(bIsOffBan, id))
-        MENU_ITEM(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_CONFIRM_PLAYER", ArrayGetStringHandle(hOffBanName, pid));
+        MENU_FORMATEX(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_CONFIRM_PLAYER", ArrayGetStringHandle(hOffBanName, pid));
     else
-        MENU_ITEM(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_CONFIRM_PLAYERN", pid);
+        MENU_FORMATEX(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_CONFIRM_PLAYERN", pid);
     
     menu_additem(menuid, szBuffer);
 
-    MENU_ITEM(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_CONFIRM_REASON", g_isBanningReason[id])
+    MENU_FORMATEX(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_CONFIRM_REASON", g_isBanningReason[id])
     menu_additem(menuid, szBuffer);
     
     new time; 
@@ -1001,15 +1000,15 @@ ConfirmMenu(id) {
         time = iBanTimes[g_isBanningTime[id]];
 
     if(time == 0)
-        MENU_ITEM(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_CONFIRM_PERMANENT");
+        MENU_FORMATEX(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_CONFIRM_PERMANENT");
     else {
         new szTime[64];
         get_time_length(1, time, timeunit_minutes, szTime, charsmax(szTime));
-        MENU_ITEM(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_CONFIRM_LENGTH", szTime);
+        MENU_FORMATEX(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_CONFIRM_LENGTH", szTime);
     }
 
     menu_additem(menuid, szBuffer);
-    MENU_ITEM(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_CONFIRM_BAN");
+    MENU_FORMATEX(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_CONFIRM_BAN");
     menu_additem(menuid, szBuffer);
 
     menu_display(id, menuid);
@@ -1077,13 +1076,13 @@ public ConfirmHandler(id, menuid, item) {
 
 public OffBanMenu(id) {
     new szBuffer[128];
-    MENU_TITLE(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_OFFBAN_TITLE");
+    MENU_FORMATEX(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_OFFBAN_TITLE");
     new menuid = menu_create(szBuffer, "OffBanHandler");
 
     new max = ArraySize(hOffBanName);
 
     for(new i; i < max; i++) {
-        MENU_ITEM(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_OFFBAN_PLAYER", ArrayGetStringHandle(hOffBanName, i));
+        MENU_FORMATEX(szBuffer, "%L", LANG_PLAYER, "BAN_SYSTEM_OFFBAN_PLAYER", ArrayGetStringHandle(hOffBanName, i));
         menu_additem(menuid, szBuffer);
     }
     menu_display(id, menuid, _, 10);
@@ -1320,7 +1319,7 @@ func_RegCvars() {
         .maxlen = charsmax(g_eCvar[g_iComplainUrl])
     );
 
-    bind_cvar_string("cortex_bans_server_ip", "82.153.70.24:27015",
+    bind_cvar_string("cortex_bans_server_ip", "0.0.0.0:27015",
         .flags = FCVAR_PROTECTED,
         .desc = "Server IP thats server is running on.",
         .bind = g_eCvar[g_iServerIP],
