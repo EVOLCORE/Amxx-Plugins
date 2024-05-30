@@ -1,4 +1,14 @@
 <?php
+session_start();
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['logout'])) {
+    session_destroy();
+    header('Location: index.php');
+    exit();
+}
+
+require_once 'inc/config.php';
+
 $cssFilePath = 'assets/css/styles.css';
 $version = md5_file($cssFilePath);
 $cssUrl = "assets/css/styles.css?v=$version";
@@ -16,13 +26,23 @@ $cssUrl = "assets/css/styles.css?v=$version";
                 <script src="https://kit.fontawesome.com/66a103f21e.js" crossorigin="anonymous"></script>
 	<link rel="stylesheet" href="<?php echo $cssUrl; ?>">
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
 </head>
 <body>
 <div class="row justify-content-end mt-3 mr-3">
     <div class="col-md-6 text-right">
-        <a href="?logout" class="btn btn-secondary icon-link-hover" style="font-size: 23px;"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
+        <!-- Button to trigger the modal -->
+        <button type="button" class="btn btn-secondary icon-link-hover" style="font-size: 23px; margin-right: 10px;" data-toggle="modal" data-target="#addnew">
+            <i class="fa-solid fa-plus"></i>
+        </button>
+        <a href="?logout" class="btn btn-secondary icon-link-hover" style="font-size: 23px;">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        </a>
     </div>
 </div>
+
+<!-- Include the modal -->
+<?php include('inc/add_modal.php'); ?>
 
 <div class="row justify-content-center">
     <div class="col-12 text-center">
@@ -63,19 +83,6 @@ $cssUrl = "assets/css/styles.css?v=$version";
     <tbody id="ccs">
 
 <?php
-session_start();
-
-if (!isset($_SESSION['username'])) {
-    header('Location: index.php');
-    exit();
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['logout'])) {
-    session_destroy();
-    header('Location: index.php');
-    exit();
-}
-
 require_once 'geoip2.phar';
 use GeoIp2\Database\Reader;
 
