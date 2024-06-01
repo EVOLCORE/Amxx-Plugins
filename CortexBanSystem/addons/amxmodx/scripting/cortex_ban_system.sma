@@ -192,7 +192,6 @@ ReadAndMakeMenus() {
     }    
 }
 
-
 @Task_SQL_Init() {
     new szQuery[800];
     g_hSqlDbTuple = SQL_MakeDbTuple(g_eCvar[g_iSqlHost], g_eCvar[g_iSqlUser], g_eCvar[g_iSqlPass], g_eCvar[g_iSqlNameDb]);
@@ -252,42 +251,45 @@ public client_putinserver(id) {
 }
 
 public client_disconnected(id) {
-    if(task_exists(id))
-        remove_task(id);
+    for (new i = 0; i < 4; i++) {
+        new taskId = id + (i == 0 ? 0 : i == 1 ? TASK_KICK : i == 2 ? TASK_SHOW : TASK_DOUBLECHECK);
+        if (task_exists(taskId)) {
+            remove_task(taskId);
+        }
+    }
     
-    if(task_exists(id + TASK_KICK))
-        remove_task(id + TASK_KICK);
-    if(task_exists(id + TASK_SHOW))
-        remove_task(id + TASK_SHOW);
-    if(task_exists(id + TASK_DOUBLECHECK))
-        remove_task(id + TASK_DOUBLECHECK);
-        
-    if(!g_PlayerCode[id][0])
+    if (!g_PlayerCode[id][0]) {
         return;
+    }
+
     new name[MAX_NAME_LENGTH];
     get_user_name(id, name, charsmax(name));
 
     new pos = ArrayFindStringi(hOffBanName, name);
 
-    if(pos == -1) {
+    if (pos == -1) {
         new data[eOffBanData];
         get_user_authid(id, data[OFF_STEAMID], charsmax(data[OFF_STEAMID]));
         get_user_ip(id, data[OFF_IP], charsmax(data[OFF_IP]), 1);
-        copy(data[OFF_CCODE], charsmax(data[OFF_CCODE] ), g_PlayerCode[id]);
-        if(get_user_flags(id) & ADMIN_FLAG_IMMUNITY)
+        copy(data[OFF_CCODE], charsmax(data[OFF_CCODE]), g_PlayerCode[id]);
+
+        if (get_user_flags(id) & ADMIN_FLAG_IMMUNITY) {
             data[OFF_IMMUNITY] = 1;
+        }
+
         ArrayPushArray(hOffBanData, data, sizeof data);
         ArrayPushString(hOffBanName, name);
-        if(g_iItems >= g_eCvar[g_iMaxOffBan]) {
+        if (g_iItems >= g_eCvar[g_iMaxOffBan]) {
             ArrayDeleteItem(hOffBanData, 0);
             ArrayDeleteItem(hOffBanName, 0);
-        }
-        else
+        } else {
             g_iItems++;
+        }
     }
 
     g_PlayerCode[id][0] = 0;
 }
+
 
 public plugin_end() {
     SQL_ThreadQuery(g_hSqlDbTuple, "IgnoreHandle", fmt("DELETE FROM `%s`", g_eCvar[g_iSqlCheckTable]));
@@ -429,8 +431,8 @@ public SQL_CheckBanHandle(failState, Handle:query, error[], errNum, data[], data
 
             add(szQuery, charsmax(szQuery), fmt(",player_nick='%s',player_id='%s',player_ip='%s',update_ban=0", nick, authid, ip));
             copy(player_nick, charsmax(player_nick), fmt("%n", id));
-            copy(player_ip, charsmax(player_ip), ip );
-            copy(player_id, charsmax(player_id), authid );
+            copy(player_ip, charsmax(player_ip), ip);
+            copy(player_id, charsmax(player_id), authid);
 
             new szBanType[3];
             switch(g_eCvar[g_iBanType]) {
@@ -455,7 +457,7 @@ public SQL_CheckBanHandle(failState, Handle:query, error[], errNum, data[], data
                     add(szQuery, charsmax(szQuery), fmt(",ban_created=%d", current_time));
                     ban_created = current_time;
                 }
-                add( szQuery, charsmax( szQuery ), ",update_ban=0");
+                add(szQuery, charsmax(szQuery), ",update_ban=0");
             }
             if(g_eCvar[g_iUpdateCode]) {
                 if(!ccode[0] || !equal(ccode, g_PlayerCode[id]))
@@ -494,7 +496,7 @@ public SQL_CheckBanHandle(failState, Handle:query, error[], errNum, data[], data
         console_print(id, "||| %L %s", id, "CONSOLE_BY_ADMIN", admin_nick);
         console_print(id, "||| %L %s", id, "CONSOLE_REASON", ban_reason);
         if(ban_length == 0)
-            console_print( id, "||| %L %L", id, "CONSOLE_LENGTH", id, "CONSOLE_PERMANENT");
+            console_print(id, "||| %L %L", id, "CONSOLE_LENGTH", id, "CONSOLE_PERMANENT");
         else
         {
             new szTimeLeft[128];
@@ -509,7 +511,7 @@ public SQL_CheckBanHandle(failState, Handle:query, error[], errNum, data[], data
 
         set_task(KICK_BANNED_PLAYER, "@Task_KickPlayer", id + TASK_KICK);
         return;
-    }   
+    }
 }
 
 @Task_KickPlayer(id) {
@@ -1119,7 +1121,7 @@ public OffBanHandler(id, menuid, item) {
 public BanLengthHandler(id, menuid, item) {
     if(is_user_connected(id) && item >= 0 && g_IsBanning[id]) {
         if(item == 0)
-            client_cmd( id, "messagemode _ban_length_" );
+            client_cmd(id, "messagemode _ban_length_");
         else
         {
             clear_bit(bIsUsingCustomTime, id);
@@ -1178,12 +1180,12 @@ SQLCheckError(errNum, error[]) {
 // admin, player, ban_length, ban reason 
 public _CBan_BanPlayer(plugin, argc) {
     if(argc <= 4) {
-        log_error(1, "CBan_BanPlayer needs at least 4 parameters ( %d ).", argc);
+        log_error(1, "CBan_BanPlayer needs at least 4 parameters (%d).", argc);
         return;   
     }
     new pid = get_param(2);
     if(!is_user_connected(pid)) {
-        log_error(1, "CBan_BanPlayer: Player not connected ( %d ).", pid);
+        log_error(1, "CBan_BanPlayer: Player not connected (%d).", pid);
         return;
     }
     new ban_length = abs(get_param(3));
