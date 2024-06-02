@@ -290,7 +290,6 @@ public client_disconnected(id) {
     g_PlayerCode[id][0] = 0;
 }
 
-
 public plugin_end() {
     SQL_ThreadQuery(g_hSqlDbTuple, "IgnoreHandle", fmt("DELETE FROM `%s`", g_eCvar[g_iSqlCheckTable]));
 
@@ -379,19 +378,18 @@ public SQL_CheckBanHandle(failState, Handle:query, error[], errNum, data[], data
 
     new max = SQL_NumResults(query);
 
-    new bid, ban_created, ban_length, current_time, update_ban;
+    new bid, ban_created, ban_length, current_time = get_systime(), update_ban;
     new player_ip[MAX_IP_LENGTH], player_id[MAX_STEAMID_LENGTH], player_nick[MAX_NAME_LENGTH];
     new admin_nick[MAX_NAME_LENGTH], ban_reason[MAX_REASON_LENGTH];
-    new server_name[64];
-    new ccode[MAX_CSIZE];
-    new ip[MAX_IP_LENGTH];
+    new server_name[64], ccode[MAX_CSIZE], ip[MAX_IP_LENGTH];
     new szQuery[512];
+
+    get_user_ip(id, ip, charsmax(ip), 1);
 
     for(new i; i < max; i++) {
         bid = SQL_ReadResult(query, 0);
         ban_created = SQL_ReadResult(query, 10);
         ban_length = SQL_ReadResult(query, 11);
-        current_time = get_systime();
         update_ban = SQL_ReadResult(query, 17);
 
         if(update_ban > 0 && (get_user_flags(id) & ADMIN_FLAG_IMMUNITY)) {
@@ -405,8 +403,6 @@ public SQL_CheckBanHandle(failState, Handle:query, error[], errNum, data[], data
             SQL_NextRow(query);
             continue;
         }
-
-        get_user_ip(id, ip, charsmax(ip), 1);
 
         formatex(szQuery, charsmax(szQuery), "UPDATE `%s` SET player_last_ip='%s',ban_kicks=ban_kicks+1", g_eCvar[g_iSqlBanTable], ip);
         
@@ -452,16 +448,13 @@ public SQL_CheckBanHandle(failState, Handle:query, error[], errNum, data[], data
         }
         else
         {
-            if(update_ban == 2) {
-                if(g_eCvar[g_iOffBanType]) {
-                    add(szQuery, charsmax(szQuery), fmt(",ban_created=%d", current_time));
-                    ban_created = current_time;
-                }
-                add(szQuery, charsmax(szQuery), ",update_ban=0");
+            if(update_ban == 2 && g_eCvar[g_iOffBanType]) {
+                add(szQuery, charsmax(szQuery), fmt(",ban_created=%d", current_time));
+                ban_created = current_time;
             }
-            if(g_eCvar[g_iUpdateCode]) {
-                if(!ccode[0] || !equal(ccode, g_PlayerCode[id]))
-                    add(szQuery, charsmax(szQuery), fmt(",c_code='%s'", g_PlayerCode[id]));
+            add(szQuery, charsmax(szQuery), ",update_ban=0");
+            if(g_eCvar[g_iUpdateCode] && (!ccode[0] || !equal(ccode, g_PlayerCode[id]))) {
+                add(szQuery, charsmax(szQuery), fmt(",c_code='%s'", g_PlayerCode[id]));
             }
             if((g_eCvar[g_iUpdateSteamID] == 2 || (g_eCvar[g_iUpdateSteamID] == 1 && !is_user_steam(id)))) {
                 new authid[MAX_STEAMID_LENGTH];
