@@ -29,9 +29,9 @@ $cssUrl = "assets/css/styles.css?v=$version";
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
 </head>
 <body>
+<?php include('inc/add_modal.php'); ?>
 <div class="row justify-content-end mt-3 mr-3">
     <div class="col-md-6 text-right">
-        <!-- Button to trigger the modal -->
         <button type="button" class="btn btn-secondary icon-link-hover" style="font-size: 23px; margin-right: 10px;" data-toggle="modal" data-target="#addnew">
             <i class="fa-solid fa-plus"></i>
         </button>
@@ -40,10 +40,6 @@ $cssUrl = "assets/css/styles.css?v=$version";
         </a>
     </div>
 </div>
-
-<!-- Include the modal -->
-<?php include('inc/add_modal.php'); ?>
-
 <div class="row justify-content-center">
     <div class="col-12 text-center">
         <div class="logo-container">
