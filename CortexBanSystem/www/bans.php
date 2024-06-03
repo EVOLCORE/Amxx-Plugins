@@ -66,7 +66,7 @@ $cssUrl = "assets/css/styles.css?v=$version";
         <th scope="col">#</th>
         <th scope="col">Nick</th>
         <th scope="col">SteamID</th>
-                <th scope="col">IP</th>
+        <th scope="col">IP</th>
         <th scope="col">Ban Length</th>
         <th scope="col">Date</th>
         <th scope="col">Reason</th>
