@@ -92,11 +92,12 @@ $resultsPerPage = 15;
 $currentPage = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 
 try {
-    $conn = new mysqli($db_credentials['host'], $db_credentials['user'], $db_credentials['password'], $db_credentials['name']);
+    $sqlCount = "SELECT COUNT(*) AS count FROM $ban_table";
+    $stmt = $conn->query($sqlCount);
+    $rowCount = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+    $totalPages = ceil($rowCount / $resultsPerPage);
 
-    if ($conn->connect_error) {
-        throw new Exception("Connection failed: " . $conn->connect_error);
-    }
+    $startLimit = ($currentPage - 1) * $resultsPerPage;
 
     function sanitizeInput($input)
     {
@@ -110,38 +111,20 @@ try {
 
     $searchTerm = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
 
-    $sqlCount = "SELECT COUNT(*) AS count FROM $ban_table";
-    $resultCount = $conn->query($sqlCount);
-    $rowCount = $resultCount->fetch_assoc()['count'];
-    $totalPages = ceil($rowCount / $resultsPerPage);
-
-    $startLimit = ($currentPage - 1) * $resultsPerPage;
-
     $sql = "SELECT * FROM $ban_table WHERE player_nick LIKE ? OR player_id LIKE ? ORDER BY ban_length DESC LIMIT ?, ?";
     $stmt = $conn->prepare($sql);
     $searchPattern = "%$searchTerm%";
-    $stmt->bind_param("ssii", $searchPattern, $searchPattern, $startLimit, $resultsPerPage);
+    $stmt->bindParam(1, $searchPattern, PDO::PARAM_STR);
+    $stmt->bindParam(2, $searchPattern, PDO::PARAM_STR);
+    $stmt->bindParam(3, $startLimit, PDO::PARAM_INT);
+    $stmt->bindParam(4, $resultsPerPage, PDO::PARAM_INT);
     $stmt->execute();
-    $result = $stmt->get_result();
-    $stmt->close();
+    $bans = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt->closeCursor();
 
-    $bans = [];
-
-    if ($result->num_rows > 0) {
+    if (count($bans) > 0) {
         $i = $startLimit + 1;
-        while ($row = $result->fetch_assoc()) {
-            $bans[] = [
-                'nick' => $row['player_nick'],
-                'steamid' => $row['player_id'],
-                'ip' => $row['player_ip'],
-                'banlength' => ($row['ban_length'] == 0) ? 'PERMANENT' : formatTime($row['ban_length']),
-                'date' => $row['ban_created'],
-                'reason' => $row['ban_reason'],
-                'admin' => $row['admin_nick'],
-                'adminsteamid' => ($row['admin_id'] == 'SERVER') ? 'NONE' : $row['admin_id'],
-                'server' => $row['server_ip'],
-            ];
-
+        foreach ($bans as $row) {
             $countryCode = getCountryFromIP($row['player_ip']);
             $countryFlagPath = "/bans/assets/images/flags/{$countryCode}.png";
             ?>
@@ -150,7 +133,7 @@ try {
                 <td><?= $row['player_nick'] ?></td>
                 <td><?= $row['player_id'] ?></td>
                 <td><img src='<?= $countryFlagPath ?>' class='flag'><?= $row['player_ip'] ?></td>
-				<td><?= ($row['ban_length'] == 0) ? 'PERMANENT' : formatTime($row['ban_length']) ?></td>
+                <td><?= ($row['ban_length'] == 0) ? 'PERMANENT' : formatTime($row['ban_length']) ?></td>
                 <td><?= formatUnixTimestamp($row['ban_created']) ?></td>
                 <td><?= $row['ban_reason'] ?></td>
                 <td><?= $row['admin_nick'] ?></td>
@@ -168,18 +151,16 @@ try {
 
         $sql = "DELETE FROM $ban_table WHERE player_id = ?";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("s", $unbanSteamID);
+        $stmt->bindParam(1, $unbanSteamID, PDO::PARAM_STR);
         $stmt->execute();
-        $stmt->close();
 
-        header("Location: {$_SERVER['PHP_SELF']}");
+        echo '<script>window.location.href = window.location.href;</script>';
         exit();
     }
-
-    $conn->close();
-} catch (Exception $e) {
+} catch (PDOException $e) {
     echo "Error: " . $e->getMessage();
 }
+$conn = null;
 
 function getCountryFromIP($ip) {
     $databasePath = __DIR__ . '/GeoLite2-City.mmdb';
