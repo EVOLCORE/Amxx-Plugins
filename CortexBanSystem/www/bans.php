@@ -23,10 +23,10 @@ $cssUrl = "assets/css/styles.css?v=$version";
     <title>Cortex Ban System</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
         integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-                <script src="https://kit.fontawesome.com/66a103f21e.js" crossorigin="anonymous"></script>
-	<link rel="stylesheet" href="<?php echo $cssUrl; ?>">
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script src="https://kit.fontawesome.com/66a103f21e.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="<?php echo $cssUrl; ?>">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
 </head>
 <body>
 <?php include('inc/add_modal.php'); ?>
@@ -66,7 +66,7 @@ $cssUrl = "assets/css/styles.css?v=$version";
         <th scope="col">#</th>
         <th scope="col">Nick</th>
         <th scope="col">SteamID</th>
-        <th scope="col">IP</th>
+                <th scope="col">IP</th>
         <th scope="col">Ban Length</th>
         <th scope="col">Date</th>
         <th scope="col">Reason</th>
@@ -99,8 +99,8 @@ try {
     {
         return htmlspecialchars(trim($input), ENT_QUOTES, 'UTF-8');
     }
-	
-	function formatUnixTimestamp($timestamp)
+
+    function formatUnixTimestamp($timestamp)
     {
         return date('H:i:s d/m/Y', $timestamp);
     }
@@ -203,7 +203,6 @@ function formatTime($minutes) {
 
 <div class="pagination">
     <?php
-    // Constants
     $maxVisiblePages = 5;
 
     // Previous button
