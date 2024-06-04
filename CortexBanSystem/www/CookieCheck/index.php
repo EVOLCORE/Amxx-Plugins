@@ -6,6 +6,10 @@ $userindex = isset($_GET['uid']) ? intval($_GET['uid']) : 0;
 $server = isset($_GET['srv']) ? htmlspecialchars($_GET['srv'], ENT_QUOTES, 'UTF-8') : '0';
 $player_ip = isset($_GET['pip']) ? htmlspecialchars($_GET['pip'], ENT_QUOTES, 'UTF-8') : '0';
 
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+
 function getRandomWord($len = 32) {
     return bin2hex(random_bytes($len / 2));
 }
@@ -67,10 +71,6 @@ if ($userindex !== 0) {
         echo "Error: Could not update the record.";
     }
 }
-
-header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-header("Cache-Control: post-check=0, pre-check=0", false);
-header("Pragma: no-cache");
 ?>
 <!DOCTYPE html>
 <html lang="en">
