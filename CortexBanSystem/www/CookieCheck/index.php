@@ -42,18 +42,10 @@ function checkVPN($ip, $api_keys) {
 
     foreach ($results as $result) {
         if (isset($result["block"]) && ($result["block"] == 1 || $result["block"] == 2)) {
-            $asn = $result["asn"] ?? "Unknown";
-            insertIntoBansASN($ip, $asn);
             return 1;
         }
     }
     return 0;
-}
-
-function insertIntoBansASN($ip, $asn) {
-    global $conn;
-    $stmt = $conn->prepare("INSERT INTO bans_asn (ip, asn) VALUES (?, ?)");
-    $stmt->execute([$ip, $asn]);
 }
 
 if ($userindex !== 0) {
