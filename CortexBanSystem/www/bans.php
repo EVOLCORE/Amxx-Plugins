@@ -82,8 +82,6 @@ $cssUrl = "assets/css/styles.css?v=$version";
 require_once 'geoip2.phar';
 use GeoIp2\Database\Reader;
 
-require_once 'inc/config.php';
-
 $resultsPerPage = 15;
 $currentPage = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 
@@ -106,7 +104,6 @@ try {
     }
 
     $searchTerm = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
-
     $sql = "SELECT * FROM $ban_table WHERE player_nick LIKE ? OR player_id LIKE ? ORDER BY ban_length DESC LIMIT ?, ?";
     $stmt = $conn->prepare($sql);
     $searchPattern = "%$searchTerm%";
@@ -142,6 +139,7 @@ try {
         }
     }
 
+    // Handle the POST request for unbanning
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['unbanSteamID'])) {
         $unbanSteamID = sanitizeInput($_POST['unbanSteamID']);
 
@@ -153,6 +151,7 @@ try {
         echo '<script>window.location.href = window.location.href;</script>';
         exit();
     }
+	$conn = null;
 } catch (PDOException $e) {
     echo "Error: " . $e->getMessage();
 }
@@ -203,6 +202,7 @@ function formatTime($minutes) {
 
 <div class="pagination">
     <?php
+    // Constants
     $maxVisiblePages = 5;
 
     // Previous button
