@@ -19,7 +19,7 @@ $cssUrl = "assets/css/styles.css?v=$version";
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta http-equiv="Permissions-Policy" content="attribution-reporting=('none'), run-ad-auction=('none'), join-ad-interest-group=('none'), browsing-topics=('none')">
+    <meta http-equiv="Permissions-Policy" content="attribution-reporting=('none'), run-ad-auction=('none'), join-ad-interest-group=('none'), browsing-topics=('none')">
     <title>Cortex Ban System</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
         integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
@@ -90,6 +90,7 @@ try {
     $stmt = $conn->query($sqlCount);
     $rowCount = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
     $totalPages = ceil($rowCount / $resultsPerPage);
+    $stmt = null;
 
     $startLimit = ($currentPage - 1) * $resultsPerPage;
 
@@ -113,7 +114,7 @@ try {
     $stmt->bindParam(4, $resultsPerPage, PDO::PARAM_INT);
     $stmt->execute();
     $bans = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $stmt->closeCursor();
+    $stmt = null;
 
     if (count($bans) > 0) {
         $i = $startLimit + 1;
@@ -147,11 +148,13 @@ try {
         $stmt = $conn->prepare($sql);
         $stmt->bindParam(1, $unbanSteamID, PDO::PARAM_STR);
         $stmt->execute();
+        $stmt = null;
 
         echo '<script>window.location.href = window.location.href;</script>';
         exit();
     }
-	$conn = null;
+
+    $conn = null;
 } catch (PDOException $e) {
     echo "Error: " . $e->getMessage();
 }
