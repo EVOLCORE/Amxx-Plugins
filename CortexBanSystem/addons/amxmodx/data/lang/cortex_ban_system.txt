@@ -40,4 +40,4 @@ BAN_SYSTEM_CONFIRM_BAN = \rConfirm
 BAN_SYSTEM_OFFBAN_PLAYER = %a
 
 KICK_CANNOT_VERIFY = Cannot verify data.
-KICK_VPN_DETECTED = VPN detected.
+KICK_VPN_DETECTED = Access from your network is restricted.
