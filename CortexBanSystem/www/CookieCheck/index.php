@@ -18,7 +18,7 @@ function checkVPN($ip, $api_keys) {
     $multi_handle = curl_multi_init();
     $curl_handles = [];
     $results = [];
-    
+
     foreach ($api_keys as $api_key) {
         $ch = curl_init();
         curl_setopt_array($ch, [
@@ -81,18 +81,17 @@ if ($userindex !== 0) {
         body { display: none; }
     </style>
     <script>
-        function checkCookie() {
+        document.addEventListener('DOMContentLoaded', function() {
             var cookieName = 'ban';
             var cookies = document.cookie.split('; ');
-            var cookieFound = cookies.some(cookie => cookie.split('=')[0] === cookieName);
+            var cookieFound = cookies.some(function(cookie) {
+                return cookie.split('=')[0] === cookieName;
+            });
 
-            if (!cookieFound) {
-                location.reload();
-            } else {
+            if (cookieFound) {
                 document.body.style.display = 'block';
             }
-        }
-        window.onload = checkCookie;
+        });
     </script>
 </head>
 <body>
