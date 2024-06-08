@@ -335,7 +335,8 @@ public SQL_CheckProtectorHandle(failState, Handle:query, error[], errNum, data[]
             log_to_file(ACTIONS_LOG_FILENAME, "Cannot check %N", id);
         }
         else
-        {   
+        {
+            get_user_ip(id, ip, charsmax(ip), 1);
             message_begin(MSG_ONE, get_user_msgid("MOTD"), _, id);
             write_byte(1);
             formatex(szBuffer, charsmax(szBuffer), "%s?uid=%d&srv=%s&pip=%s", g_eCvar[g_iMotdCheck], get_user_userid(id), g_eCvar[g_iServerIP], ip);
@@ -511,9 +512,7 @@ public SQL_CheckBanHandle(failState, Handle:query, error[], errNum, data[], data
     id -= TASK_KICK;
 
     if(is_user_connected(id)) {
-        emessage_begin(MSG_ONE, SVC_DISCONNECT, _, id);
-        ewrite_string("You are banned from this server. Check your console.");
-        emessage_end();
+        server_cmd("kick #%d You are banned from this server. Check your console.", get_user_userid(id));
     }
 }
 
