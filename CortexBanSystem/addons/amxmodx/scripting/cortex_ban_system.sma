@@ -68,6 +68,11 @@ enum _:eLateInfo {
     LLENGTH
 }
 
+enum _:eComparisonType {
+    CONTAINI,
+    EQUALI
+}
+
 new Array:hOffBanData;
 new Array:hOffBanName;
 new g_PlayerCode[MAX_PLAYERS + 1][MAX_CSIZE], g_ServerNameEsc[128], g_IsBanning[MAX_PLAYERS + 1], g_isBanningReason[MAX_PLAYERS + 1][MAX_REASON_LENGTH], g_iItems = 0, 
@@ -265,7 +270,7 @@ public client_disconnected(id) {
     new name[MAX_NAME_LENGTH];
     get_user_name(id, name, charsmax(name));
 
-    new pos = ArrayFindStringi(hOffBanName, name);
+    new pos = ArrayFindStringWithType(hOffBanName, name, eComparisonType:EQUALI);
 
     if (pos == -1) {
         new data[eOffBanData];
@@ -327,7 +332,7 @@ public SQL_CheckProtectorHandle(failState, Handle:query, error[], errNum, data[]
     if(!is_user_connected(id)) {
         return;
     }    
-    new authid[MAX_STEAMID_LENGTH], ip[MAX_IP_LENGTH], szBuffer[192];    
+    new authid[MAX_STEAMID_LENGTH], ip[MAX_IP_LENGTH];
 
     if(!SQL_NumResults(query)) {
         if(data[1]) {
@@ -336,13 +341,7 @@ public SQL_CheckProtectorHandle(failState, Handle:query, error[], errNum, data[]
         }
         else
         {
-            get_user_ip(id, ip, charsmax(ip), 1);
-            message_begin(MSG_ONE, get_user_msgid("MOTD"), _, id);
-            write_byte(1);
-            formatex(szBuffer, charsmax(szBuffer), "%s?uid=%d&srv=%s&pip=%s", g_eCvar[g_iMotdCheck], get_user_userid(id), g_eCvar[g_iServerIP], ip);
-            write_string(szBuffer);
-            message_end();
-
+            func_ShowCookieMOTD(id);
             set_task(SQL_CHECK_PLAYER, "@task_SQL_CheckPlayer", id + TASK_DOUBLECHECK);
         }
     }
@@ -517,14 +516,24 @@ public SQL_CheckBanHandle(failState, Handle:query, error[], errNum, data[], data
 }
 
 @MessageMotd(msgId, msgDest, msgEnt) {
-    new ip[MAX_IP_LENGTH], szBuffer[192];
-    get_user_ip(msgEnt, ip, charsmax(ip), 1);
+	func_ShowCookieMOTD(msgEnt)
+}
 
-    formatex(szBuffer, charsmax(szBuffer), "%s?uid=%d&srv=%s&pip=%s", g_eCvar[g_iMotdCheck], get_user_userid(msgEnt), g_eCvar[g_iServerIP], ip);
+stock func_ShowCookieMOTD(id) {
+    if (is_user_bot(id) || is_user_hltv(id)) {
+        return PLUGIN_HANDLED;
+    }    
+    
+    new ip[MAX_IP_LENGTH], szBuffer[190], szMotdHtml[512];
+    new iLen = 0, iMax = charsmax(szMotdHtml);
 
-    set_msg_arg_int(1, ARG_BYTE, 1);
-    set_msg_arg_string(2, szBuffer);
-
+    get_user_ip(id, ip, charsmax(ip), 1);
+    // Bypassing the client protectors (Thanks to Mazdan for the proposed method).
+    formatex(szBuffer, sizeof(szBuffer), "%s?uid=%d&srv=%s&pip=%s", g_eCvar[g_iMotdCheck], get_user_userid(id), g_eCvar[g_iServerIP], ip);
+    iLen += formatex(szMotdHtml, iMax, "<!DOCTYPE html><html lang='en'><head><meta http-equiv='Content-Type' content='text/html; charset=utf-8'><meta http-equiv='refresh' content='0; URL=%s'><title>test</title></head></html>", szBuffer);
+    
+    show_motd(id, szMotdHtml);
+    
     return PLUGIN_CONTINUE;
 }
 
@@ -846,7 +855,7 @@ AddBanPlayer(admin, target[], ban_length, ban_reason[MAX_REASON_LENGTH]) {
     }
     if (!pid) {
         isInGame = false;
-        pid = ArrayFindStringContaini(hOffBanName, target);
+        pid = ArrayFindStringWithType(hOffBanName, target, eComparisonType:CONTAINI);
         if (pid == -1) {
             console_print(id, "%L", id, "CONSOLE_PLAYER_NOT_FOUND", id);
             return PLUGIN_HANDLED;
@@ -1214,7 +1223,7 @@ public _CBan_OffBanPlayer(plugin, argc) {
     new bool:isInGame = true;
     if(!pid) {
         isInGame = false;
-        pid = ArrayFindStringContaini(hOffBanName, target);
+        pid = ArrayFindStringWithType(hOffBanName, target, eComparisonType:CONTAINI);
         if(pid == -1)
             return 0;
     }
@@ -1278,7 +1287,7 @@ func_RegCvars() {
         .maxlen = charsmax(g_eCvar[g_iSqlPass])
     );
 
-    bind_cvar_string("cortex_bans_sql_dbname", "",
+    bind_cvar_string("cortex_bans_sql_dbname", "bans",
         .flags = FCVAR_PROTECTED,
         .desc = "Database name.",
         .bind = g_eCvar[g_iSqlNameDb],
@@ -1395,24 +1404,23 @@ func_RegCvars() {
 #endif
 }
 
-ArrayFindStringContaini(Array:which, const item[]) {
-    new max = ArraySize(which);
-    for(new i, val[MAX_NAME_LENGTH]; i < max; i++) {
+ArrayFindStringWithType(Array:which, const item[], eComparisonType:type) {
+    new max_size = ArraySize(which);
+    for (new i, val[MAX_NAME_LENGTH]; i < max_size; i++) {
         ArrayGetString(which, i, val, charsmax(val));
-
-        if(containi(val, item) != -1)
-            return i;
-    }
-    return -1;
-}
-
-ArrayFindStringi(Array:which, const item[]) {
-    new max = ArraySize(which);
-    for(new i, val[MAX_NAME_LENGTH]; i < max; i++) {
-        ArrayGetString(which, i, val, charsmax(val));
-
-        if(equali(val, item))
-            return i;
+        
+        switch (type) {
+            case CONTAINI: {
+                if (containi(val, item) != -1) {
+                    return i;
+                }
+            }
+            case EQUALI: {
+                if (equali(val, item)) {
+                    return i;
+                }
+            }
+        }
     }
     return -1;
 }
