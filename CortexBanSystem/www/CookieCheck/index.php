@@ -14,14 +14,13 @@ function getRandomWord($len = 32) {
     return bin2hex(random_bytes($len / 2));
 }
 
-function checkVPN($ip, $api_keys, &$cache, $retry_limit = 3, $delay_seconds = 1) {
+function checkVPN($ip, $api_keys, &$cache) {
     if (isset($cache[$ip])) {
         return $cache[$ip];
     }
 
     $multi_handle = curl_multi_init();
     $curl_handles = [];
-    $results = [];
 
     foreach ($api_keys as $api_key) {
         $ch = curl_init();
@@ -35,34 +34,24 @@ function checkVPN($ip, $api_keys, &$cache, $retry_limit = 3, $delay_seconds = 1)
     }
 
     $running = null;
-    $retries = 0;
-
     do {
-        $status = curl_multi_exec($multi_handle, $running);
-        if ($status !== CURLM_OK) {
-            if (++$retries >= $retry_limit) {
-                break;
-            }
-            sleep($delay_seconds);
-        }
+        curl_multi_exec($multi_handle, $running);
         curl_multi_select($multi_handle);
     } while ($running > 0);
 
     foreach ($curl_handles as $ch) {
         $result = curl_multi_getcontent($ch);
-        $results[] = json_decode($result, true);
+        $response = json_decode($result, true);
         curl_multi_remove_handle($multi_handle, $ch);
-    }
 
-    curl_multi_close($multi_handle);
-
-    foreach ($results as $result) {
-        if (isset($result["block"]) && ($result["block"] == 1 || $result["block"] == 2)) {
+        if (isset($response["block"]) && ($response["block"] == 1 || $response["block"] == 2)) {
             $cache[$ip] = true;
+            curl_multi_close($multi_handle);
             return true;
         }
     }
 
+    curl_multi_close($multi_handle);
     $cache[$ip] = false;
     return false;
 }
@@ -82,11 +71,9 @@ function loadCache($filename = 'cache.json') {
 }
 
 if ($userindex !== 0) {
+    $cookie = $_COOKIE[$cookie_name] ?? getRandomWord();
     if (!isset($_COOKIE[$cookie_name])) {
-        $cookie = getRandomWord();
         setcookie($cookie_name, $cookie, time() + (2 * 31536000), "/", "", true, true); // Secure and HttpOnly flags
-    } else {
-        $cookie = $_COOKIE[$cookie_name];
     }
 
     $cache = loadCache();
@@ -96,11 +83,7 @@ if ($userindex !== 0) {
     $stmt = $conn->prepare("REPLACE INTO $table_check (uid, c_code, server, p_ip, vpn_proxy) VALUES (?, ?, ?, ?, ?)");
     $stmt->execute([$userindex, $cookie, $server, $player_ip, $vpn_proxy]);
 
-    if ($stmt->rowCount()) {
-        echo "Welcome to server";
-    } else {
-        echo "Error: Could not update the record.";
-    }
+    echo $stmt->rowCount() ? "Welcome to server" : "Error: Could not update the record.";
 }
 ?>
 <!DOCTYPE html>
