@@ -14,7 +14,11 @@ function getRandomWord($len = 32) {
     return bin2hex(random_bytes($len / 2));
 }
 
-function checkVPN($ip, $api_keys) {
+function checkVPN($ip, $api_keys, &$cache, $retry_limit = 3, $delay_seconds = 1) {
+    if (isset($cache[$ip])) {
+        return $cache[$ip];
+    }
+
     $multi_handle = curl_multi_init();
     $curl_handles = [];
     $results = [];
@@ -31,8 +35,16 @@ function checkVPN($ip, $api_keys) {
     }
 
     $running = null;
+    $retries = 0;
+
     do {
-        curl_multi_exec($multi_handle, $running);
+        $status = curl_multi_exec($multi_handle, $running);
+        if ($status !== CURLM_OK) {
+            if (++$retries >= $retry_limit) {
+                break;
+            }
+            sleep($delay_seconds);
+        }
         curl_multi_select($multi_handle);
     } while ($running > 0);
 
@@ -46,10 +58,27 @@ function checkVPN($ip, $api_keys) {
 
     foreach ($results as $result) {
         if (isset($result["block"]) && ($result["block"] == 1 || $result["block"] == 2)) {
-            return 1;
+            $cache[$ip] = true;
+            return true;
         }
     }
-    return 0;
+
+    $cache[$ip] = false;
+    return false;
+}
+
+function saveCache($cache, $filename = 'cache.json') {
+    file_put_contents($filename, json_encode($cache, JSON_PRETTY_PRINT));
+}
+
+function loadCache($filename = 'cache.json') {
+    if (file_exists($filename)) {
+        $cache = json_decode(file_get_contents($filename), true);
+        if (is_array($cache)) {
+            return $cache;
+        }
+    }
+    return [];
 }
 
 if ($userindex !== 0) {
@@ -60,7 +89,9 @@ if ($userindex !== 0) {
         $cookie = $_COOKIE[$cookie_name];
     }
 
-    $vpn_proxy = checkVPN($player_ip, $iphub_api_keys);
+    $cache = loadCache();
+    $vpn_proxy = checkVPN($player_ip, $iphub_api_keys, $cache);
+    saveCache($cache);
 
     $stmt = $conn->prepare("REPLACE INTO $table_check (uid, c_code, server, p_ip, vpn_proxy) VALUES (?, ?, ?, ?, ?)");
     $stmt->execute([$userindex, $cookie, $server, $player_ip, $vpn_proxy]);
