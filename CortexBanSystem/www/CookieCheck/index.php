@@ -2,9 +2,13 @@
 include '../inc/config.php';
 
 $cookie_name = "ban";
-$userindex = isset($_GET['uid']) ? intval($_GET['uid']) : 0;
-$server = isset($_GET['srv']) ? htmlspecialchars($_GET['srv'], ENT_QUOTES, 'UTF-8') : '0';
-$player_ip = isset($_GET['pip']) ? htmlspecialchars($_GET['pip'], ENT_QUOTES, 'UTF-8') : '0';
+$userindex = $_GET['uid'] ?? 0;
+$server = $_GET['srv'] ?? '0';
+$player_ip = $_GET['pip'] ?? '0';
+
+$userindex = intval($userindex);
+$server = htmlspecialchars($server, ENT_QUOTES, 'UTF-8');
+$player_ip = htmlspecialchars($player_ip, ENT_QUOTES, 'UTF-8');
 
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Cache-Control: post-check=0, pre-check=0", false);
@@ -19,63 +23,62 @@ function checkVPN($ip, $api_keys, &$cache) {
         return $cache[$ip];
     }
 
-    $multi_handle = curl_multi_init();
-    $curl_handles = [];
+    $mh = curl_multi_init();
+    $handles = [];
 
-    foreach ($api_keys as $api_key) {
+    foreach ($api_keys as $key) {
         $ch = curl_init();
         curl_setopt_array($ch, [
+            CURLOPT_URL => "http://v2.api.iphub.info/ip/{$ip}",
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => ["X-Key: $api_key"],
-            CURLOPT_URL => "http://v2.api.iphub.info/ip/{$ip}"
+            CURLOPT_HTTPHEADER => ["X-Key: $key"],
+            CURLOPT_TIMEOUT => 5,
         ]);
-        curl_multi_add_handle($multi_handle, $ch);
-        $curl_handles[] = $ch;
+        curl_multi_add_handle($mh, $ch);
+        $handles[] = $ch;
     }
 
     $running = null;
     do {
-        curl_multi_exec($multi_handle, $running);
-        curl_multi_select($multi_handle);
+        curl_multi_exec($mh, $running);
+        curl_multi_select($mh);
     } while ($running > 0);
 
-    foreach ($curl_handles as $ch) {
-        $result = curl_multi_getcontent($ch);
-        $response = json_decode($result, true);
-        curl_multi_remove_handle($multi_handle, $ch);
+    foreach ($handles as $ch) {
+        $response = curl_multi_getcontent($ch);
+        $data = json_decode($response, true);
+        curl_multi_remove_handle($mh, $ch);
+        curl_close($ch);
 
-        if (isset($response["block"]) && ($response["block"] == 1 || $response["block"] == 2)) {
+        if (isset($data["block"]) && in_array($data["block"], [1, 2])) {
             $cache[$ip] = true;
-            curl_multi_close($multi_handle);
+            curl_multi_close($mh);
             return true;
         }
     }
 
-    curl_multi_close($multi_handle);
+    curl_multi_close($mh);
     $cache[$ip] = false;
     return false;
 }
 
 function saveCache($cache, $filename = 'cache.json') {
-    file_put_contents($filename, json_encode($cache, JSON_PRETTY_PRINT));
+    file_put_contents($filename, json_encode($cache, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 }
 
 function loadCache($filename = 'cache.json') {
     if (file_exists($filename)) {
-        $cache = json_decode(file_get_contents($filename), true);
-        if (is_array($cache)) {
-            return $cache;
-        }
+        return json_decode(file_get_contents($filename), true) ?? [];
     }
     return [];
 }
 
-if ($userindex !== 0) {
-    $cookie = $_COOKIE[$cookie_name] ?? getRandomWord();
-    if (!isset($_COOKIE[$cookie_name])) {
-        setcookie($cookie_name, $cookie, time() + (2 * 31536000), "/", "", true, true); // Secure and HttpOnly flags
-    }
+$cookie = $_COOKIE[$cookie_name] ?? getRandomWord();
+if (!isset($_COOKIE[$cookie_name])) {
+    setcookie($cookie_name, $cookie, time() + (2 * 31536000), "/", "", true, true);
+}
 
+if ($userindex !== 0) {
     $cache = loadCache();
     $vpn_proxy = checkVPN($player_ip, $iphub_api_keys, $cache);
     saveCache($cache);
