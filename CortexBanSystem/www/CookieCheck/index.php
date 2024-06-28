@@ -1,5 +1,5 @@
 <?php
-include '../inc/config.php';
+require_once("../inc/config.php");
 
 $cookie_name = "ban";
 $cookie_lifetime = time() + (2 * 31536000);
@@ -88,28 +88,40 @@ try {
 
         $stmt = $conn->prepare("REPLACE INTO $table_check (uid, c_code, server, p_ip, vpn_proxy) VALUES (?, ?, ?, ?, ?)");
         $stmt->execute([$userindex, $cookie, $server, $player_ip, $vpn_proxy]);
+        
+        $value = '<META HTTP-EQUIV="SET-COOKIE" CONTENT="'.$cookie_name.'='.$cookie.';expires='.date("D, d M Y H:i:s", $cookie_lifetime).' GMT;path=/;">';
+        $value .= '<iframe src="http://'.$_SERVER['HTTP_HOST'].'/';
+        $value .= 'index.php?reload=1';
+        $value .= '&cookie='.htmlspecialchars($cookie);
+        $value .= '&uid='.htmlspecialchars($userindex);
+        $value .= '&srv='.htmlspecialchars($server);
+        $value .= '&pip='.htmlspecialchars($player_ip);
+        $value .= '" width="1" height="1" align="left" frameborder="0"></iframe>';
+
+        echo $value;
     }
+
+    if (isset($_GET['reload'])) {
+        $value = "http://".$_SERVER['HTTP_HOST']."/";
+        $value .= "pic.swf?cookie=".htmlspecialchars($_GET['cookie']);
+        $value .= "&uid=".htmlspecialchars($_GET['uid']);
+        $value .= "&srv=".htmlspecialchars($_GET['srv']);
+        $value .= "&pip=".htmlspecialchars($_GET['pip']);
+
+        echo '<html>
+            <body>
+                <object classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000" width="1" height="1" id="mymoviename">
+                    <param name="movie" value="'.$value.'" />
+                    <param name="quality" value="high" />
+                    <param name="bgcolor" value="#ffffff" />
+                    <embed src="'.$value.'" quality="high" bgcolor="#ffffff" width="1" height="1" name="mymoviename" align="" type="application/x-shockwave-flash" /></embed>
+                </object>
+            </body>
+        </html>';
+    }
+
+    include 'motd.html';
 } catch (Exception $e) {
     error_log($e->getMessage());
 }
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Redirecting</title>
-    <style>
-        body { display: none; }
-    </style>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var cookies = document.cookie.split(';');
-            cookies.some(function(cookie) {
-                return cookie.trim().startsWith('ban=') && (document.body.style.display = 'block');
-            });
-        });
-    </script>
-</head>
-<body>
-</body>
-</html>
