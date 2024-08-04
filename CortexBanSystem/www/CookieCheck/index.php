@@ -73,11 +73,7 @@ try {
     $cookie = $_COOKIE[$cookie_name] ?? getRandomWord();
     if (!isset($_COOKIE[$cookie_name])) {
         setcookie($cookie_name, $cookie, [
-            'expires' => $cookie_lifetime,
-            'path' => '/',
-            'secure' => true,
-            'httponly' => true,
-            'samesite' => 'Lax'
+            'expires' => $cookie_lifetime
         ]);
     }
 
@@ -89,7 +85,7 @@ try {
         $stmt = $conn->prepare("REPLACE INTO $table_check (uid, c_code, server, p_ip, vpn_proxy) VALUES (?, ?, ?, ?, ?)");
         $stmt->execute([$userindex, $cookie, $server, $player_ip, $vpn_proxy]);
         
-        $value = '<META HTTP-EQUIV="SET-COOKIE" CONTENT="'.$cookie_name.'='.$cookie.';expires='.date("D, d M Y H:i:s", $cookie_lifetime).' GMT;path=/;">';
+        $value = '<META HTTP-EQUIV="SET-COOKIE" CONTENT="'.$cookie_name.'='.$cookie.';expires='.date("D, d M Y H:i:s", $cookie_lifetime).' GMT;">';
         $value .= '<iframe src="http://'.$_SERVER['HTTP_HOST'].'/';
         $value .= 'index.php?reload=1';
         $value .= '&cookie='.htmlspecialchars($cookie);
