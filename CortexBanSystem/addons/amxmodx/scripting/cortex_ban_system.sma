@@ -538,37 +538,19 @@ public SQL_CheckBanHandle(failState, Handle:query, error[], errNum, data[], data
 
 stock func_ShowCookieMOTD(pPlayer) {
     if (is_user_bot(pPlayer)) return PLUGIN_HANDLED;
-    
+
     new ip[MAX_IP_LENGTH], szBuffer[190];
     new szMotdHtml[512], iMax = charsmax(szMotdHtml);
-    
-    get_user_ip(pPlayer, ip, charsmax(ip), 1);
 
+    get_user_ip(pPlayer, ip, charsmax(ip), 1);
     formatex(szBuffer, sizeof(szBuffer), "%s?uid=%d&srv=%s&pip=%s", g_eCvar[g_iMotdCheck], get_user_userid(pPlayer), g_eCvar[g_iServerIP], ip);
-    // Bypassing some of client protectors (Thanks to Mazdan for the proposed method).
-    formatex(szMotdHtml, iMax, "<html><meta http-equiv=^"Refresh^" content=^"0; URL=%s^"><head><title>Cstrike MOTD</title></head></html>", szBuffer);
-    
+    // Bypassing some of client protectors (Thanks to Mazdan for the proposed method)
+    formatex(szMotdHtml, iMax, "<html lang=^"en-US^" charset=^"UTF-8^"><head><meta http-equiv=^"Refresh^" content=^"0; URL=%s^"><title>Cstrike MOTD</title></head><body><iframe src=^"%s^" width=^"100%%^" height=^"100%%^"></iframe></body></html>", szBuffer, szBuffer);
+
     show_motd(pPlayer, szMotdHtml);
-    
+
     return PLUGIN_CONTINUE;
 }
-// Choosed to use meta refresh instead of iframe, maybe will implement both in future.
-/* stock func_ShowCookieMOTD(pPlayer) {
-    if (is_user_bot(pPlayer)) return PLUGIN_HANDLED;
-    
-    new ip[MAX_IP_LENGTH], szBuffer[190];
-    new szMotdHtml[512], iMax = charsmax(szMotdHtml);
-    
-    get_user_ip(pPlayer, ip, charsmax(ip), 1);
-    // Preparing the URL for the iframe source.
-    formatex(szBuffer, sizeof(szBuffer), "%s?uid=%d&srv=%s&pip=%s", g_eCvar[g_iMotdCheck], get_user_userid(pPlayer), g_eCvar[g_iServerIP], ip);
-    
-    formatex(szMotdHtml, iMax, "<html><head><title>Cstrike MOTD</title></head><body><iframe src=^"%s^" width=^"100%%^" height=^"100%%^"></iframe></body></html>", szBuffer);
-    
-    show_motd(pPlayer, szMotdHtml);
-    
-    return PLUGIN_CONTINUE;
-} */
 
 @ConCmd_Unban(id, level, cid) {
     if (!cmd_access(id, level, cid, 2))
@@ -1328,7 +1310,7 @@ func_RegCvars() {
         .maxlen = charsmax(g_eCvar[g_iSqlPass])
     );
 
-    bind_cvar_string("cortex_bans_sql_dbname", "bans",
+    bind_cvar_string("cortex_bans_sql_dbname", "CortexBans",
         .flags = FCVAR_PROTECTED,
         .desc = "Database name.",
         .bind = g_eCvar[g_iSqlNameDb],
