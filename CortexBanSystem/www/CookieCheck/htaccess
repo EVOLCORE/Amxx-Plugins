@@ -1,1 +1,2 @@
-RewriteEngine Off
+RewriteEngine On
+RewriteRule ^CookieCheck/?$ /index.php?uid=%{QUERY_STRING}
