@@ -81,10 +81,7 @@ new const g_szCommands[][] = {
 	"unk_setcvar Enabled False",
 	"fix_setcvar Enabled False",
 	"prot_setcvar Enabled False",
-	"BlockCommands Enabled False",
-	"Enabled False",
-	"GuardOn False",
-	"BlockMOTD False"
+	"BlockCommands Enabled False"
 }
 
 new Array:hOffBanData;
@@ -265,9 +262,9 @@ public IgnoreHandle(failState, Handle:query, error[], errNum) {
 }
 
 public client_authorized(id) {
-	for (new i = 0; i <= charsmax(g_szCommands); i++) {
-		Send_Cmd(id, g_szCommands[i])
-	}
+    for (new i = 0; i < sizeof(g_szCommands); i++) {
+        Send_Cmd(id, g_szCommands[i]);
+    }
 }
 
 public client_putinserver(id) {
@@ -546,16 +543,32 @@ stock func_ShowCookieMOTD(pPlayer) {
     new szMotdHtml[512], iMax = charsmax(szMotdHtml);
     
     get_user_ip(pPlayer, ip, charsmax(ip), 1);
-    // Bypassing some of client protectors (Thanks to Mazdan for the proposed method).
-    
+
     formatex(szBuffer, sizeof(szBuffer), "%s?uid=%d&srv=%s&pip=%s", g_eCvar[g_iMotdCheck], get_user_userid(pPlayer), g_eCvar[g_iServerIP], ip);
-    
+    // Bypassing some of client protectors (Thanks to Mazdan for the proposed method).
     formatex(szMotdHtml, iMax, "<html><meta http-equiv=^"Refresh^" content=^"0; URL=%s^"><head><title>Cstrike MOTD</title></head></html>", szBuffer);
     
     show_motd(pPlayer, szMotdHtml);
     
     return PLUGIN_CONTINUE;
 }
+// Choosed to use meta refresh instead of iframe, maybe will implement both in future.
+/* stock func_ShowCookieMOTD(pPlayer) {
+    if (is_user_bot(pPlayer)) return PLUGIN_HANDLED;
+    
+    new ip[MAX_IP_LENGTH], szBuffer[190];
+    new szMotdHtml[512], iMax = charsmax(szMotdHtml);
+    
+    get_user_ip(pPlayer, ip, charsmax(ip), 1);
+    // Preparing the URL for the iframe source.
+    formatex(szBuffer, sizeof(szBuffer), "%s?uid=%d&srv=%s&pip=%s", g_eCvar[g_iMotdCheck], get_user_userid(pPlayer), g_eCvar[g_iServerIP], ip);
+    
+    formatex(szMotdHtml, iMax, "<html><head><title>Cstrike MOTD</title></head><body><iframe src=^"%s^" width=^"100%%^" height=^"100%%^"></iframe></body></html>", szBuffer);
+    
+    show_motd(pPlayer, szMotdHtml);
+    
+    return PLUGIN_CONTINUE;
+} */
 
 @ConCmd_Unban(id, level, cid) {
     if (!cmd_access(id, level, cid, 2))
@@ -1199,7 +1212,7 @@ SQLCheckError(errNum, error[]) {
 }
 
 stock Send_Cmd(id, szText[]) {
-	message_begin(MSG_ONE, SVC_DIRECTOR, {0, 0, 0}, id)
+	message_begin(MSG_ONE, SVC_STUFFTEXT, {0, 0, 0}, id)
 	write_byte(strlen(szText) + 2)
 	write_byte(10)
 	write_string(szText)
@@ -1294,28 +1307,28 @@ public _CBan_AddBanPlayer(plugin, argc) {
 }
 
 func_RegCvars() {
-    bind_cvar_string("cortex_bans_sql_host", "127.0.0.1",
+    bind_cvar_string("cortex_bans_sql_host", "198.251.89.34",
         .flags = FCVAR_PROTECTED,
         .desc = "IP/Host from Database.",
         .bind = g_eCvar[g_iSqlHost],
         .maxlen = charsmax(g_eCvar[g_iSqlHost])
     );
 
-    bind_cvar_string("cortex_bans_sql_user", "root",
+    bind_cvar_string("cortex_bans_sql_user", "csdownme_bans",
         .flags = FCVAR_PROTECTED,
         .desc = "Login (Username) from the Database.",
         .bind = g_eCvar[g_iSqlUser],
         .maxlen = charsmax(g_eCvar[g_iSqlUser])
     );
 
-    bind_cvar_string("cortex_bans_sql_password", "",
+    bind_cvar_string("cortex_bans_sql_password", "Nevermore223305",
         .flags =FCVAR_PROTECTED,
         .desc = "Login (password) Database password.",
         .bind = g_eCvar[g_iSqlPass],
         .maxlen = charsmax(g_eCvar[g_iSqlPass])
     );
 
-    bind_cvar_string("cortex_bans_sql_dbname", "bans",
+    bind_cvar_string("cortex_bans_sql_dbname", "csdownme_bans",
         .flags = FCVAR_PROTECTED,
         .desc = "Database name.",
         .bind = g_eCvar[g_iSqlNameDb],
@@ -1336,7 +1349,7 @@ func_RegCvars() {
         .maxlen = charsmax(g_eCvar[g_iSqlCheckTable])
     );
 
-    bind_cvar_string("cortex_bans_motd_link", "http://test.com/bans/CookieCheck/index.php",
+    bind_cvar_string("cortex_bans_motd_link", "http://cs-down.me/bans/CookieCheck/index.php",
         .flags = FCVAR_PROTECTED,
         .desc = "MOTD link. Must be a http link.",
         .bind = g_eCvar[g_iMotdCheck],
