@@ -1,6 +1,7 @@
 [en]
 CSDM_SETTINGS_TITLE = \ySettings Menu ( \r/menu\y )
 CSDM_ONLY_HS = \wMod: Only Headshot
+CSDM_KILLFEED = \wEffect: KillFeed
 CSDM_FADE_SCREEN = \wEffect: Screen Fade
 CSDM_BULLET_DAMAGE = \wHud: Bullet Damage
 CSDM_HEADSHOT_MSG = \wHud: Headshot
