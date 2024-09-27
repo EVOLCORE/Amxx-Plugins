@@ -6,6 +6,8 @@
 
 #pragma compress 1
 
+new PLUGIN_VERSION[] = "1.0.3"
+
 #define IsPlayer(%1)                     (1 <= %1 <= MaxClients)
 #define TASK_KILLS                       12023
 #define TASK_CHAT                        13923
@@ -20,6 +22,16 @@ new const FILE_SETTINGS[][] = {
     "BONUS_MAX_HP",
     "BONUS_HP_NORMAL",
     "BONUS_HP_HS"
+}
+
+new const g_iMenuSettings[][] = {
+    "CSDM_ONLY_HS",
+    "CSDM_KILLFEED",
+    "CSDM_FADE_SCREEN",
+    "CSDM_BULLET_DAMAGE",
+    "CSDM_HEADSHOT_MSG",
+    "CSDM_ALL_KILLS",
+    "CSDM_BONUS_HP"
 }
 
 enum _:Settings {
@@ -39,6 +51,7 @@ enum _:RGB { R, G, B }
 
 enum _:CsdmSettings {
     bool:bHeadshotMode,
+    bool:bKillFeed,
     bool:bScreenFade,
     bool:bBulletDamage,
     bool:bHeadshotMsg,
@@ -56,13 +69,16 @@ new g_eFileSettings[Settings], g_iHudSyncObj,
     g_iKillsCounter[MAX_PLAYERS + 1][KillType],
     g_iSettingColorRender[Settings][RGB]
 new bool:g_bIsUserDead[MAX_PLAYERS + 1],
-    bool:g_bIsHeadshot[MAX_PLAYERS + 1][MAX_PLAYERS + 1]
+    bool:g_bIsHeadshot[MAX_PLAYERS + 1][MAX_PLAYERS + 1],
+    bool:PlayerSettings[CsdmSettings] = {false, false, true, true, true, true, true}
 
 public plugin_init() {
-    register_plugin("[ReAPI] CSDM Menu", "1.0.2", "mIDnight")
+    register_plugin("[ReAPI] CSDM Menu", PLUGIN_VERSION, "mIDnight")
+    create_cvar("csdm_menu_ver", PLUGIN_VERSION, FCVAR_SERVER | FCVAR_SPONLY)
  
     register_dictionary("csdm_menu.txt")
 
+    register_message(get_user_msgid("DeathMsg"), "event_MessageDeathMsg")
     RegisterHookChain(RG_CBasePlayer_TakeDamage, "RG_Player_Damage_Post", .post = true)
     RegisterHookChain(RG_CBasePlayer_TraceAttack, "RG_Player_TraceAttack_Pre", .post = false)
     RegisterHookChain(RG_CBasePlayer_Killed, "RG_Player_Killed_Post", .post = true)
@@ -80,20 +96,19 @@ public plugin_precache() {
         set_fail_state("Missing configuration file: `%s`", Path)
     }
  
-    new INIParser: iIniParserHandle
-    iIniParserHandle = INI_CreateParser()
+    new INIParser: iIniParserHandle = INI_CreateParser()
     
     INI_SetReaders(iIniParserHandle, "@INI_ParseValueHandler")
     INI_ParseFile(iIniParserHandle, Path)
     INI_DestroyParser(iIniParserHandle)
 }
 
-bool: @INI_ParseValueHandler(INIParser: handle, const szKey[], const szValue[], bool: invalid_tokens, bool: equal_token, bool: quotes, curtok, any: data) {
+bool:@INI_ParseValueHandler(INIParser: handle, const szKey[], const szValue[], bool: invalid_tokens, bool: equal_token, bool: quotes, curtok, any: data) {
     if (szKey[0] == EOS || szKey[0] == '/') {
         return true
     }
 
-    new szBuffer[256], szCmd[64], szHudPosX[5], szHudPosY[5], szColor[RGB][4]
+    new szBuffer[256], szCmd[64], szParams[4][5]
 
     for (new i = 0; i < sizeof(FILE_SETTINGS); i++) {
         if (!equal(szKey, FILE_SETTINGS[i])) {
@@ -102,16 +117,16 @@ bool: @INI_ParseValueHandler(INIParser: handle, const szKey[], const szValue[], 
 
         switch (i) {
             case 0, 2: {
-                parse(szValue, szHudPosX, charsmax(szHudPosX), szHudPosY, charsmax(szHudPosY))
-                g_eFileSettings[i == 0 ? HudHSPosX : HudKillPosX] = (float:str_to_float(szHudPosX))
-                g_eFileSettings[i == 0 ? HudHSPosY : HudKillPosY] = (float:str_to_float(szHudPosY))
+                parse(szValue, szParams[0], charsmax(szParams[]), szParams[1], charsmax(szParams[]))
+                g_eFileSettings[i == 0 ? HudHSPosX : HudKillPosX] = float:str_to_float(szParams[0])
+                g_eFileSettings[i == 0 ? HudHSPosY : HudKillPosY] = float:str_to_float(szParams[1])
             }
             case 1, 3, 4: {
-                parse(szValue, szColor[R], charsmax(szColor[]), szColor[G], charsmax(szColor[]), szColor[B], charsmax(szColor[]))
-                new idx = i == 1 ? HudHSColor : (i == 3 ? HudKillColor : FadeColor)
-                g_iSettingColorRender[idx][R] = str_to_num(szColor[R])
-                g_iSettingColorRender[idx][G] = str_to_num(szColor[G])
-                g_iSettingColorRender[idx][B] = str_to_num(szColor[B])
+                parse(szValue, szParams[R], charsmax(szParams[]), szParams[G], charsmax(szParams[]), szParams[B], charsmax(szParams[]))
+                new idx = (i == 1) ? HudHSColor : ((i == 3) ? HudKillColor : FadeColor)
+                g_iSettingColorRender[idx][R] = str_to_num(szParams[R])
+                g_iSettingColorRender[idx][G] = str_to_num(szParams[G])
+                g_iSettingColorRender[idx][B] = str_to_num(szParams[B])
             }
             case 5: {
                 copy(szBuffer, charsmax(szBuffer), szValue)
@@ -120,7 +135,7 @@ bool: @INI_ParseValueHandler(INIParser: handle, const szKey[], const szValue[], 
                 }
             }
             case 6, 7, 8: {
-                g_eFileSettings[i == 6 ? g_iBonusHP : i == 7 ? g_iBonusNormal : g_iBonusHS] = (float:str_to_float(szValue))
+                g_eFileSettings[i == 6 ? g_iBonusHP : i == 7 ? g_iBonusNormal : g_iBonusHS] = float:str_to_float(szValue)
             }
         }
     }
@@ -134,12 +149,9 @@ public client_putinserver(id) {
     if(task_exists(id + TASK_CHAT)) {
         remove_task(id + TASK_CHAT)
     }
-    g_ePlayerSettings[id][bHeadshotMode] = false
-    g_ePlayerSettings[id][bScreenFade] = true
-    g_ePlayerSettings[id][bBulletDamage] = true
-    g_ePlayerSettings[id][bHeadshotMsg] = true
-    g_ePlayerSettings[id][bKillsCounter] = true
-    g_ePlayerSettings[id][bHealing] = true
+    for (new i = 0; i < CsdmSettings; i++) {
+        g_ePlayerSettings[id][i] = PlayerSettings[i];
+    }
     g_iKillsCounter[id][Normal] = 0
     g_iKillsCounter[id][Headshot] = 0
     g_bIsUserDead[id] = true
@@ -147,18 +159,43 @@ public client_putinserver(id) {
     set_task(180.0, "task_show_chat_ad", id + TASK_CHAT, .flags = "b")
 }
 
+public event_MessageDeathMsg(msgid, dest, receiver) {
+    enum { arg_killer = 1, arg_victim, arg_headshot, arg_weapon_name }
+
+    new killer = get_msg_arg_int(arg_killer)
+    new victim = get_msg_arg_int(arg_victim)
+    new headshot = get_msg_arg_int(arg_headshot)
+    new killerWeaponName[64]
+    get_msg_arg_string(arg_weapon_name, killerWeaponName, charsmax(killerWeaponName))
+
+    if (g_ePlayerSettings[killer][bKillFeed]) {
+        UTIL_DeathMsg(msgid, MSG_ONE, killer, killer, victim, headshot, killerWeaponName)
+    }
+    if (g_ePlayerSettings[victim][bKillFeed]) {
+        UTIL_DeathMsg(msgid, MSG_ONE, victim, killer, victim, headshot, killerWeaponName)
+    }
+
+    for (new p = 1; p <= MaxClients; p++) {
+        if (is_user_connected(p) && !is_user_hltv(p) && !is_user_bot(p) && !g_ePlayerSettings[p][bKillFeed]) {
+            UTIL_DeathMsg(msgid, MSG_ONE, p, killer, victim, headshot, killerWeaponName)
+        }
+    }
+
+    return PLUGIN_HANDLED
+}
+
 public RG_Player_Damage_Post(iVictim, iInflictor, iAttacker, Float:fDamage, bitsDamageType) {
-    #if defined FFA_MODE
+#if defined FFA_MODE
     if(!IsPlayer(iVictim) || !IsPlayer(iAttacker) || iVictim == iAttacker)
-    #else
+#else
     if(!IsPlayer(iVictim) || !IsPlayer(iAttacker) || iVictim == iAttacker || get_user_team(iVictim) == get_user_team(iAttacker))
-    #endif
+#endif
         return HC_CONTINUE
 
     static const Float: iDamageCoords[][] = { {0.50, 0.40}, {0.56, 0.44}, {0.60, 0.50}, {0.56, 0.56}, {0.50, 0.60}, {0.44, 0.56}, {0.40, 0.50}, {0.44, 0.44} }
     static iDamageCoordPos[MAX_CLIENTS + 1]
 
-    if(g_ePlayerSettings[iAttacker][bBulletDamage] && !(g_ePlayerSettings[iAttacker][bHeadshotMode] && get_member(iAttacker , m_LastHitGroup ) == HIT_HEAD)) {
+    if(g_ePlayerSettings[iAttacker][bBulletDamage] && !(g_ePlayerSettings[iAttacker][bHeadshotMode] && get_member(iAttacker , m_LastHitGroup) == HIT_HEAD)) {
         set_hudmessage(random_num(0, 255), random_num(0, 255), random_num(0, 255), iDamageCoords[iDamageCoordPos[iAttacker]][0], iDamageCoords[iDamageCoordPos[iAttacker]][1], _, _, 1.0)
         ShowSyncHudMsg(iAttacker, g_iHudSyncObj, "%.0f", fDamage)
 
@@ -169,11 +206,11 @@ public RG_Player_Damage_Post(iVictim, iInflictor, iAttacker, Float:fDamage, bits
 }
 
 public RG_Player_TraceAttack_Pre(iVictim, iAttacker, Float:fDamage, Float:fDirection[3], trhandle) {
-    #if defined FFA_MODE
+#if defined FFA_MODE
     if(!IsPlayer(iVictim) || !IsPlayer(iAttacker) || iVictim == iAttacker)
-    #else
+#else
     if(!IsPlayer(iVictim) || !IsPlayer(iAttacker) || iVictim == iAttacker || get_user_team(iVictim) == get_user_team(iAttacker))
-    #endif
+#endif
         return HC_CONTINUE
 
     if(g_ePlayerSettings[iAttacker][bHeadshotMode] && get_tr2(trhandle, TR_iHitgroup) != HIT_HEAD && get_user_weapon(iAttacker) != CSW_KNIFE) {
@@ -201,14 +238,11 @@ public RG_Player_Killed_Post(const iVictim, iAttacker, iGibs) {
         show_dhudmessage(iAttacker, "HEAD SHOT")
     }
 
-    if(g_ePlayerSettings[iAttacker][bKillsCounter]) {
+    if (g_ePlayerSettings[iAttacker][bKillsCounter]) {
         g_iKillsCounter[iAttacker][Normal]++
+        g_iKillsCounter[iAttacker][Headshot] += get_member(iVictim, m_bHeadshotKilled)
 
-        if(get_member(iVictim, m_bHeadshotKilled)) {
-            g_iKillsCounter[iAttacker][Headshot]++
-        }
-
-        if(g_iKillsCounter[iAttacker][Normal] > 0 || g_iKillsCounter[iAttacker][Headshot] > 0) {
+        if (g_iKillsCounter[iAttacker][Normal] | g_iKillsCounter[iAttacker][Headshot]) {
             remove_task(iAttacker + TASK_KILLS)
             set_task(0.1, "task_show_hudkills", iAttacker + TASK_KILLS)
         }
@@ -230,23 +264,14 @@ public RG_Player_Spawn_Post(iEntity) {
 }
 
 public Clcmd_CSDM_Menu(id) {
-    new szTemp[128]
-    formatex(szTemp, charsmax(szTemp), "\w%L", LANG_PLAYER, "CSDM_SETTINGS_TITLE")
-    new menu = menu_create(szTemp, "settings_menu_handler")
+    new szBuffer[128]
+    formatex(szBuffer, charsmax(szBuffer), "\w%L", LANG_PLAYER, "CSDM_SETTINGS_TITLE")
+    new menu = menu_create(szBuffer, "settings_menu_handler")
 
-    new settingLabels[][64] = {
-        "CSDM_ONLY_HS",
-        "CSDM_FADE_SCREEN",
-        "CSDM_BULLET_DAMAGE",
-        "CSDM_HEADSHOT_MSG",
-        "CSDM_ALL_KILLS",
-        "CSDM_BONUS_HP"
-    }
-
-    for (new setting = 0; setting < sizeof(settingLabels); setting++) {
-        formatex(szTemp, charsmax(szTemp), "\w%L %s", LANG_PLAYER, settingLabels[setting],
+    for (new setting = 0; setting < sizeof(g_iMenuSettings); setting++) {
+        formatex(szBuffer, charsmax(szBuffer), "\w%L %s", LANG_PLAYER, g_iMenuSettings[setting],
             g_ePlayerSettings[id][setting] ? "\w[\yON\w]" : "\w[\rOFF\w]")
-        menu_additem(menu, szTemp)
+        menu_additem(menu, szBuffer)
     }
 
     menu_display(id, menu)
@@ -300,6 +325,15 @@ public task_show_hudkills(id) {
 stock MenuExit(menu) {
     menu_destroy(menu)
     return PLUGIN_HANDLED
+}
+
+stock UTIL_DeathMsg(const msgid, dest, const receiver, const killer, const victim, const headshot, const weaponName[]) {
+    message_begin(dest, msgid, _, receiver)
+    write_byte(killer)
+    write_byte(victim)
+    write_byte(headshot)
+    write_string(weaponName)
+    message_end()
 }
 
 stock FadeScreen(id) {
