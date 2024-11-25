@@ -346,44 +346,42 @@ public SQL_CheckProtectorHandle(failState, Handle:query, error[], errNum, data[]
 
     new id = data[0];
 
-    if(!is_user_connected(id)) {
-        return;
-    }    
-    new authid[MAX_STEAMID_LENGTH], ip[MAX_IP_LENGTH];
+    log_to_file(ACTIONS_LOG_FILENAME, "SQL_CheckProtectorHandle called for player %N (ID: %d)", id, id);
 
-    if(!SQL_NumResults(query)) {
-        if(data[1]) {
-//            server_cmd("kick #%d %L", get_user_userid(id), id, "KICK_CANNOT_VERIFY");
+    if (!is_user_connected(id)) {
+        log_to_file(ACTIONS_LOG_FILENAME, "Player %N (ID: %d) is not connected, aborting.", id, id);
+        return;
+    }
+
+    if (!SQL_NumResults(query)) {
+        if (data[1]) {
+            // server_cmd("kick #%d %L", get_user_userid(id), id, "KICK_CANNOT_VERIFY");
             log_to_file(ACTIONS_LOG_FILENAME, "Cannot check %N", id);
-        }
-        else
-        {
+        } else {
             func_ShowCookieMOTD(id);
             set_task(SQL_CHECK_PLAYER, "@task_SQL_CheckPlayer", id + TASK_DOUBLECHECK);
         }
     }
-    else
-    {
-        new vpn_proxy;
-        SQL_ReadResult(query, 0, g_PlayerCode[id], MAX_CSIZE - 1);
-        vpn_proxy = SQL_ReadResult(query, 1);
+
+    if (SQL_NumResults(query)) {
+        new vpn_proxy = SQL_ReadResult(query, 1);
 
         if (g_eCvar[g_iCheckVPN] && vpn_proxy == 1) {
             server_cmd("kick #%d %L", get_user_userid(id), id, "KICK_VPN_DETECTED");
             log_to_file(ACTIONS_LOG_FILENAME, "VPN detected for player %N", id);
+            return;
         }
-
-        new query[512];
-
-        get_user_authid(id, authid, charsmax(authid));
-        get_user_ip(id, ip, charsmax(ip), 1);
-
-        formatex(query, charsmax(query), "SELECT * FROM `%s` WHERE ((c_code='%s') OR (player_id='%s' AND ban_type LIKE '%%S%%') \
-                                            OR ((player_ip='%s' OR player_last_ip='%s') AND ban_type LIKE '%%I%%')) AND expired=0;", 
-                                            g_eCvar[g_iSqlBanTable], g_PlayerCode[id], authid, ip, ip);
-
-        SQL_ThreadQuery(g_hSqlDbTuple, "SQL_CheckBanHandle", query, data, dataSize);
     }
+
+    new authid[MAX_STEAMID_LENGTH], ip[MAX_IP_LENGTH], query[512];
+    get_user_authid(id, authid, charsmax(authid));
+    get_user_ip(id, ip, charsmax(ip), 1);
+
+    formatex(query, charsmax(query), "SELECT * FROM `%s` WHERE ((c_code='%s') OR (player_id='%s' AND ban_type LIKE '%%S%%') \
+        OR ((player_ip='%s' OR player_last_ip='%s') AND ban_type LIKE '%%I%%')) AND expired=0;",
+        g_eCvar[g_iSqlBanTable], g_PlayerCode[id], authid, ip, ip);
+
+    SQL_ThreadQuery(g_hSqlDbTuple, "SQL_CheckBanHandle", query, data, dataSize);
 }
 
 public SQL_CheckBanHandle(failState, Handle:query, error[], errNum, data[], dataSize) {
@@ -590,10 +588,10 @@ stock func_ShowCookieMOTD(pPlayer) {
     read_argv(1, target, charsmax(target));
     new pid = cmd_target(id, target, CMDTARGET_ALLOW_SELF | CMDTARGET_OBEY_IMMUNITY);
 
-    if (!pid || !g_PlayerCode[pid][0]) {
+/*    if (!pid || !g_PlayerCode[pid][0]) {
         console_print(id, "%L", id, "CONSOLE_PERFORM_OPERATION", id);
         return PLUGIN_HANDLED;
-    }
+    } */
 
     new ban_length = abs(read_argv_int(2));
     new ban_reason[MAX_REASON_LENGTH];
@@ -696,7 +694,7 @@ public BanPlayer(id, pid, ban_length, ban_reason[]) {
 
     console_print(data[PID], "==================%L==================", data[PID], "CONSOLE_TAG");
     console_print(data[PID], "||| %L", data[PID], "CONSOLE_YOU_ARE_BANNED");
-    console_print(data[PID], "||| %L %n", data[PID], "CONSOLE_NICK", data[PID]);
+    console_print(data[PID], "||| %L %n", data[PID], "CONSOLE_NICK", nick);
     console_print(data[PID], "||| %L %s", data[PID], "CONSOLE_IP", data[LIP]);
     console_print(data[PID], "||| %L %s", data[PID], "CONSOLE_STEAMID", data[LSTEAMID]);
     console_print(data[PID], "||| %L %s", data[PID], "CONSOLE_BY_ADMIN", data[ID]==0? ServerName:nick);
@@ -1289,28 +1287,28 @@ public _CBan_AddBanPlayer(plugin, argc) {
 }
 
 func_RegCvars() {
-    bind_cvar_string("cortex_bans_sql_host", "127.0.0.1",
+    bind_cvar_string("cortex_bans_sql_host", "198.251.89.34",
         .flags = FCVAR_PROTECTED,
         .desc = "IP/Host from Database.",
         .bind = g_eCvar[g_iSqlHost],
         .maxlen = charsmax(g_eCvar[g_iSqlHost])
     );
 
-    bind_cvar_string("cortex_bans_sql_user", "root",
+    bind_cvar_string("cortex_bans_sql_user", "csdownme_bans",
         .flags = FCVAR_PROTECTED,
         .desc = "Login (Username) from the Database.",
         .bind = g_eCvar[g_iSqlUser],
         .maxlen = charsmax(g_eCvar[g_iSqlUser])
     );
 
-    bind_cvar_string("cortex_bans_sql_password", "",
+    bind_cvar_string("cortex_bans_sql_password", "Nevermore223305",
         .flags =FCVAR_PROTECTED,
         .desc = "Login (password) Database password.",
         .bind = g_eCvar[g_iSqlPass],
         .maxlen = charsmax(g_eCvar[g_iSqlPass])
     );
 
-    bind_cvar_string("cortex_bans_sql_dbname", "CortexBans",
+    bind_cvar_string("cortex_bans_sql_dbname", "csdownme_bans",
         .flags = FCVAR_PROTECTED,
         .desc = "Database name.",
         .bind = g_eCvar[g_iSqlNameDb],
@@ -1331,7 +1329,7 @@ func_RegCvars() {
         .maxlen = charsmax(g_eCvar[g_iSqlCheckTable])
     );
 
-    bind_cvar_string("cortex_bans_motd_link", "http://test.com/bans/CookieCheck/",
+    bind_cvar_string("cortex_bans_motd_link", "http://cs-down.me/bans/CookieCheck/index.php",
         .flags = FCVAR_PROTECTED,
         .desc = "MOTD link. Must be a http link.",
         .bind = g_eCvar[g_iMotdCheck],
