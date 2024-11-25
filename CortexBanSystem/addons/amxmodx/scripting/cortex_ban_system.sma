@@ -346,10 +346,7 @@ public SQL_CheckProtectorHandle(failState, Handle:query, error[], errNum, data[]
 
     new id = data[0];
 
-    log_to_file(ACTIONS_LOG_FILENAME, "SQL_CheckProtectorHandle called for player %N (ID: %d)", id, id);
-
     if (!is_user_connected(id)) {
-        log_to_file(ACTIONS_LOG_FILENAME, "Player %N (ID: %d) is not connected, aborting.", id, id);
         return;
     }
 
@@ -1287,28 +1284,28 @@ public _CBan_AddBanPlayer(plugin, argc) {
 }
 
 func_RegCvars() {
-    bind_cvar_string("cortex_bans_sql_host", "198.251.89.34",
+    bind_cvar_string("cortex_bans_sql_host", "127.0.0.1",
         .flags = FCVAR_PROTECTED,
         .desc = "IP/Host from Database.",
         .bind = g_eCvar[g_iSqlHost],
         .maxlen = charsmax(g_eCvar[g_iSqlHost])
     );
 
-    bind_cvar_string("cortex_bans_sql_user", "csdownme_bans",
+    bind_cvar_string("cortex_bans_sql_user", "bans",
         .flags = FCVAR_PROTECTED,
         .desc = "Login (Username) from the Database.",
         .bind = g_eCvar[g_iSqlUser],
         .maxlen = charsmax(g_eCvar[g_iSqlUser])
     );
 
-    bind_cvar_string("cortex_bans_sql_password", "Nevermore223305",
+    bind_cvar_string("cortex_bans_sql_password", "",
         .flags =FCVAR_PROTECTED,
         .desc = "Login (password) Database password.",
         .bind = g_eCvar[g_iSqlPass],
         .maxlen = charsmax(g_eCvar[g_iSqlPass])
     );
 
-    bind_cvar_string("cortex_bans_sql_dbname", "csdownme_bans",
+    bind_cvar_string("cortex_bans_sql_dbname", "bans",
         .flags = FCVAR_PROTECTED,
         .desc = "Database name.",
         .bind = g_eCvar[g_iSqlNameDb],
@@ -1329,7 +1326,7 @@ func_RegCvars() {
         .maxlen = charsmax(g_eCvar[g_iSqlCheckTable])
     );
 
-    bind_cvar_string("cortex_bans_motd_link", "http://cs-down.me/bans/CookieCheck/index.php",
+    bind_cvar_string("cortex_bans_motd_link", "http://test/bans/CookieCheck/index.php",
         .flags = FCVAR_PROTECTED,
         .desc = "MOTD link. Must be a http link.",
         .bind = g_eCvar[g_iMotdCheck],
