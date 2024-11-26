@@ -13,6 +13,7 @@ CONSOLE_SERVERNAME = Server Name:
 CONSOLE_FOR_UNBAN = For unban vist:
 CONSOLE_UNBAN_ARGS = [CortexBans] Couldn't understand type.
 CONSOLE_SUCCESS_BANNED = [CortexBans] Player %n successfully banned.
+CONSOLE_SUCCESS_ADDBANNED = [CortexBans] Player with %s successfully banned.
 CONSOLE_HAS_IMMUNITY = [CortexBans] Player has immunity!
 CONSOLE_INVALID_ARG = [CortexBans] Invalid argument. Must be IP or SteamID.
 CONSOLE_PLAYER_NOT_FOUND = [CortexBans] Player not found!
