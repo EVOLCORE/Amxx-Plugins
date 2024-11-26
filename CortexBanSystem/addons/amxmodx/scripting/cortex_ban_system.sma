@@ -325,20 +325,22 @@ public plugin_end() {
 
 @task_SQL_CheckPlayer(id) {
     new data[2], szQuery[512];
-    if(id > 32) {
+    
+    if (id > 32) {
         id -= TASK_DOUBLECHECK;
         data[1] = 1;
     }
 
-    if(!is_user_connected(id))
+    if (!is_user_connected(id))
         return;
 
     data[0] = id;
 
-    formatex(szQuery, charsmax(szQuery), "SELECT `c_code`, `vpn_proxy` FROM `%s` WHERE `uid`=%d AND `server`='%s';", 
-            g_eCvar[g_iSqlCheckTable], get_user_userid(id), g_eCvar[g_iServerIP]);
+    formatex(szQuery, charsmax(szQuery),
+        "SELECT `c_code`, `vpn_proxy` FROM `%s` WHERE `uid`=%d AND `server`='%s';", 
+        g_eCvar[g_iSqlCheckTable], get_user_userid(id), g_eCvar[g_iServerIP]);
 
-    SQL_ThreadQuery(g_hSqlDbTuple, "SQL_CheckProtectorHandle", szQuery, data, sizeof(data));       
+    SQL_ThreadQuery(g_hSqlDbTuple, "SQL_CheckProtectorHandle", szQuery, data, sizeof(data));
 }
 
 public SQL_CheckProtectorHandle(failState, Handle:query, error[], errNum, data[], dataSize) {
@@ -350,35 +352,42 @@ public SQL_CheckProtectorHandle(failState, Handle:query, error[], errNum, data[]
         return;
     }
 
-    if (!SQL_NumResults(query)) {
-        if (data[1]) {
-            // server_cmd("kick #%d %L", get_user_userid(id), id, "KICK_CANNOT_VERIFY");
-            log_to_file(ACTIONS_LOG_FILENAME, "Cannot check %N", id);
-        } else {
-            func_ShowCookieMOTD(id);
-            set_task(SQL_CHECK_PLAYER, "@task_SQL_CheckPlayer", id + TASK_DOUBLECHECK);
-        }
-    }
+    new vpn_proxy, hasData = SQL_NumResults(query);
 
-    if (SQL_NumResults(query)) {
-        new vpn_proxy = SQL_ReadResult(query, 1);
+    if (hasData) {
+        vpn_proxy = SQL_ReadResult(query, 1);
 
         if (g_eCvar[g_iCheckVPN] && vpn_proxy == 1) {
             server_cmd("kick #%d %L", get_user_userid(id), id, "KICK_VPN_DETECTED");
             log_to_file(ACTIONS_LOG_FILENAME, "VPN detected for player %N", id);
             return;
         }
+
+        SQL_ReadResult(query, 0, g_PlayerCode[id], MAX_CSIZE - 1);
     }
 
-    new authid[MAX_STEAMID_LENGTH], ip[MAX_IP_LENGTH], query[512];
+    if (!hasData || g_PlayerCode[id][0] == EOS) {
+        func_ShowCookieMOTD(id);
+        set_task(SQL_CHECK_PLAYER, "@task_SQL_CheckPlayer", id + TASK_DOUBLECHECK);
+    }
+
+    new authid[MAX_STEAMID_LENGTH], ip[MAX_IP_LENGTH], szBanQuery[512];
     get_user_authid(id, authid, charsmax(authid));
     get_user_ip(id, ip, charsmax(ip), 1);
 
-    formatex(query, charsmax(query), "SELECT * FROM `%s` WHERE ((c_code='%s') OR (player_id='%s' AND ban_type LIKE '%%S%%') \
-        OR ((player_ip='%s' OR player_last_ip='%s') AND ban_type LIKE '%%I%%')) AND expired=0;",
-        g_eCvar[g_iSqlBanTable], g_PlayerCode[id], authid, ip, ip);
+    if (g_PlayerCode[id][0] == EOS) {
+        formatex(szBanQuery, charsmax(szBanQuery), 
+            "SELECT * FROM `%s` WHERE ((player_id='%s' AND ban_type LIKE '%%S%%') \
+            OR ((player_ip='%s' OR player_last_ip='%s') AND ban_type LIKE '%%I%%')) AND expired=0;",
+            g_eCvar[g_iSqlBanTable], authid, ip, ip);
+    } else {
+        formatex(szBanQuery, charsmax(szBanQuery), 
+            "SELECT * FROM `%s` WHERE ((c_code='%s') OR (player_id='%s' AND ban_type LIKE '%%S%%') \
+            OR ((player_ip='%s' OR player_last_ip='%s') AND ban_type LIKE '%%I%%')) AND expired=0;",
+            g_eCvar[g_iSqlBanTable], g_PlayerCode[id], authid, ip, ip);
+    }
 
-    SQL_ThreadQuery(g_hSqlDbTuple, "SQL_CheckBanHandle", query, data, dataSize);
+    SQL_ThreadQuery(g_hSqlDbTuple, "SQL_CheckBanHandle", szBanQuery, data, dataSize);
 }
 
 public SQL_CheckBanHandle(failState, Handle:query, error[], errNum, data[], dataSize) {
@@ -585,10 +594,10 @@ stock func_ShowCookieMOTD(pPlayer) {
     read_argv(1, target, charsmax(target));
     new pid = cmd_target(id, target, CMDTARGET_ALLOW_SELF | CMDTARGET_OBEY_IMMUNITY);
 
-/*    if (!pid || !g_PlayerCode[pid][0]) {
+    if (!pid /*|| !g_PlayerCode[pid][0]*/) {
         console_print(id, "%L", id, "CONSOLE_PERFORM_OPERATION", id);
         return PLUGIN_HANDLED;
-    } */
+    }
 
     new ban_length = abs(read_argv_int(2));
     new ban_reason[MAX_REASON_LENGTH];
@@ -691,7 +700,7 @@ public BanPlayer(id, pid, ban_length, ban_reason[]) {
 
     console_print(data[PID], "==================%L==================", data[PID], "CONSOLE_TAG");
     console_print(data[PID], "||| %L", data[PID], "CONSOLE_YOU_ARE_BANNED");
-    console_print(data[PID], "||| %L %n", data[PID], "CONSOLE_NICK", nick);
+    console_print(data[PID], "||| %L %n", data[PID], "CONSOLE_NICK", data[PID]);
     console_print(data[PID], "||| %L %s", data[PID], "CONSOLE_IP", data[LIP]);
     console_print(data[PID], "||| %L %s", data[PID], "CONSOLE_STEAMID", data[LSTEAMID]);
     console_print(data[PID], "||| %L %s", data[PID], "CONSOLE_BY_ADMIN", data[ID]==0? ServerName:nick);
