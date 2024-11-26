@@ -775,6 +775,7 @@ UnbanPlayer(id, target[MAX_NAME_LENGTH], type) {
         new ban_reason[MAX_REASON_LENGTH];
         read_argv(3, ban_reason, charsmax(ban_reason));
         AddBanPlayer(id, target, ban_length, ban_reason);
+        console_print(id, "%L", id, "CONSOLE_SUCCESS_ADDBANNED", target);
     }
 
     return PLUGIN_HANDLED;
@@ -1335,7 +1336,7 @@ func_RegCvars() {
         .maxlen = charsmax(g_eCvar[g_iSqlCheckTable])
     );
 
-    bind_cvar_string("cortex_bans_motd_link", "http://test/bans/CookieCheck/index.php",
+    bind_cvar_string("cortex_bans_motd_link", "http://test.com/bans/CookieCheck/index.php",
         .flags = FCVAR_PROTECTED,
         .desc = "MOTD link. Must be a http link.",
         .bind = g_eCvar[g_iMotdCheck],
