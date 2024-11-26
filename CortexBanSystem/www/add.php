@@ -15,19 +15,27 @@ if (isset($_POST['add'])) {
     if (empty($nick)) {
         $_SESSION['error'] .= "* Nick cannot be empty<br>";
     }
-    if (empty($steamid)) {
-        if (empty($ip)) {
-            $_SESSION['error'] .= "* IP and SteamID cannot be both empty.<br>";
-        }
+    
+    if (empty($steamid) && empty($ip)) {
+        $_SESSION['error'] .= "* IP and SteamID cannot be both empty.<br>";
     } else {
-        $ban_type = "S";
-        if (strcmp("STEAM_", substr($steamid, 0, 6)) != 0) {
-            $_SESSION['error'] .= "* SteamID is invalid.<br>";
+        if (!empty($steamid)) {
+            if (strcmp("STEAM_", substr($steamid, 0, 6)) == 0) {
+                $ban_type .= "S";
+            } else {
+                $_SESSION['error'] .= "* SteamID is invalid.<br>";
+            }
+        }
+        
+        if (!empty($ip)) {
+            $ban_type .= "I";
         }
     }
+
     if (empty($reason)) {
         $_SESSION['error'] .= "* Reason cannot be empty.<br>";
     }
+    
     if ($length !== '0' && empty($length)) {
         $_SESSION['error'] .= "* Length cannot be empty.<br>";
     } else {
@@ -66,13 +74,10 @@ if (isset($_POST['add'])) {
         }
     }
 
-    // Remove substr() function call, as it's not needed here
-
 } else {
     $_SESSION['error'] = 'Fill up add form first';
 }
 
-// Redirect only after all processing is done
 header('location: bans.php');
 exit();
 ?>
