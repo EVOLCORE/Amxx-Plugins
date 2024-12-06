@@ -493,4 +493,9 @@ stock rg_round_setup(pPlayer, bHighMoney) {
     rg_set_user_armor(pPlayer, 0, ARMOR_NONE);
     rg_give_default_items(pPlayer);
     rg_add_account(pPlayer, bHighMoney ? 16000 : 800, AS_SET);
+
+    new players[32], countPlayers;
+    get_players(players, countPlayers, "aceh", "TERRORIST");
+    if(countPlayers)
+        rg_give_item(players[random_num(0, countPlayers - 1)], "weapon_c4", GT_REPLACE);
 }
