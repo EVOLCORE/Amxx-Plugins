@@ -4,24 +4,44 @@
 #include <fakemeta>
 #include <reapi>
 
+/*new const g_iCWMenuSettings[][] = {
+	"CW_MENU_TITLE",
+    "CW_MENU_ADMIN_MENU",
+    "CW_MENU_START_CW",
+    "CW_MENU_STOP_CW",
+    "CW_MENU_CHANGE_MAP",
+    "CW_MENU_CURRENT_PASSWORD",
+	"CW_MENU_NO_PASSWORD_SET",
+    "CW_MENU_SET_PASSWORD",
+    "CW_MENU_REMOVE_PASSWORD"
+};
+
+new const g_iAdminMenuItems[][] = {
+    "CW_MENU_KICK_PLAYER",
+    "CW_MENU_BAN_PLAYER",
+    "CW_MENU_MOVE_PLAYER",
+    "CW_MENU_DISABLE_SAY",
+    "CW_MENU_ENABLE_SAY"
+}; */
+
 new HookChain:g_iHC_AddPlayerItem_Pre,
-HookChain:g_iHC_RoundEnd_Pre,
-HookChain:g_iHC_RoundEnd_Post,
-HookChain:g_iHC_RestartRound_Post,
-HookChain:g_iHC_ShowVGUIMenu_Pre,
-HookChain:g_iHC_HandleMenu_ChooseTeam_Pre,
-HookChain:g_iHC_Spawn_Post;
+	HookChain:g_iHC_RoundEnd_Pre,
+	HookChain:g_iHC_RoundEnd_Post,
+	HookChain:g_iHC_RestartRound_Post,
+	HookChain:g_iHC_ShowVGUIMenu_Pre,
+	HookChain:g_iHC_HandleMenu_ChooseTeam_Pre,
+	HookChain:g_iHC_Spawn_Post;
 
 new Array:g_aWarmUp,
-Array:g_aCW;
+	Array:g_aCW;
 
 new g_szCvar_Sv_Password[32],
-g_iVotes[2];
+	g_iVotes[2];
 
 new bool:b_talk = false;
 
 public plugin_init() {
-	register_plugin("[ReAPI] CW Core", "1.3", "mIDnight");
+	register_plugin("[ReAPI] CW Core", "1.4", "mIDnight");
 	register_dictionary("cw_core.txt");
 
 	register_clcmd("say /menu", "@clcmd_cw");
@@ -31,6 +51,7 @@ public plugin_init() {
 	register_clcmd("setpassword", "@clcmd_setpassword");
 	register_clcmd("joinclass", "@clcmd_joinedclass");
 	register_clcmd("say","@clcmd_say");
+//	register_clcmd("say /score", "@score");
 
 	register_forward(FM_ClientKill, "@ClientKill_Pre", ._post = false);
 
@@ -41,6 +62,7 @@ public plugin_init() {
 	DisableHookChain((g_iHC_ShowVGUIMenu_Pre = RegisterHookChain(RG_ShowVGUIMenu, "@ShowVGUIMenu_Pre", .post = false)));
 	DisableHookChain((g_iHC_HandleMenu_ChooseTeam_Pre = RegisterHookChain(RG_HandleMenu_ChooseTeam, "@HandleMenu_ChooseTeam_Pre", .post = false)));
 	DisableHookChain((g_iHC_Spawn_Post = RegisterHookChain(RG_CBasePlayer_Spawn, "@CBasePlayer_Spawn_Post", .post = true)));
+	RegisterHookChain(RG_CBasePlayer_MakeBomber, "@CBasePlayer_MakeBomber_Pre", false);
 
 	bind_pcvar_string(get_cvar_pointer("sv_password"), g_szCvar_Sv_Password, charsmax(g_szCvar_Sv_Password));
 
@@ -67,6 +89,14 @@ public client_disconnected(id) {
 	}		
 }
 
+/*@score(pPlayer) {
+	set_member_game(m_iNumCTWins, 14);
+    set_member_game(m_iNumTerroristWins, 0);
+
+	client_print_color(0, 0, "Half-time test");
+    return PLUGIN_HANDLED;
+}*/
+
 @clcmd_say(const pPlayer) {
 	if(b_talk) {
 		client_print_color(pPlayer, pPlayer, "%L", LANG_PLAYER, "CW_PRINT_ID_SAY");
@@ -76,75 +106,82 @@ public client_disconnected(id) {
 }		
 
 @clcmd_cw(const pPlayer) {
-	if(~get_user_flags(pPlayer) & ADMIN_IMMUNITY) {
-		client_print_color(pPlayer, pPlayer, "%L", LANG_PLAYER, "CW_PRINT_ID_MENU_OPEN");
-		return PLUGIN_CONTINUE;
-	}
+    if (~get_user_flags(pPlayer) & ADMIN_IMMUNITY) {
+        client_print_color(pPlayer, pPlayer, "%L", LANG_PLAYER, "CW_PRINT_ID_MENU_OPEN");
+        return PLUGIN_CONTINUE;
+    }
 
-	new iMenu = menu_create("\yCW Menu", "@clcmd_cw_handler");
+    new iMenu = menu_create("\yCW Menu", "@clcmd_cw_handler");
 
-	menu_additem(iMenu, "Admin Menu^n");
+    menu_additem(iMenu, "Admin Menu^n");
+    menu_additem(iMenu, "\rStart CW");
+    menu_additem(iMenu, "\rStop CW");
+    menu_additem(iMenu, "\rChange Map^n");
 
-	menu_additem(iMenu, "\rStart CW");
-	menu_additem(iMenu, "\rStop CW");
-	menu_additem(iMenu, "\rChange Map^n");
+    if (g_szCvar_Sv_Password[0] != EOS) {
+        menu_additem(iMenu, fmt("Current Password: \y%s", g_szCvar_Sv_Password));
+        menu_additem(iMenu, "Set Password");
+        menu_additem(iMenu, "Remove Password");
+    } else {
+        menu_additem(iMenu, "Current Password: \yNO Password");
+        menu_additem(iMenu, "Set Password");
+    }
 
-	menu_additem(iMenu, fmt("Current Password: \y%s", g_szCvar_Sv_Password[0] == EOS ? "NO" : g_szCvar_Sv_Password));
-	menu_additem(iMenu, "Set Password");
-	menu_additem(iMenu, "Remove Password");
-
-	menu_display(pPlayer, iMenu);
-	return PLUGIN_HANDLED;
+    menu_display(pPlayer, iMenu);
+    return PLUGIN_HANDLED;
 }
 
 @clcmd_cw_handler(const pPlayer, const iMenu, const iItem) {
-	switch(iItem) {
-		case 0: {
-			if(get_user_flags(pPlayer) & ADMIN_IMMUNITY) {
-				@cw_adminmenu(pPlayer);
-			}
-			else {
-				menu_display(pPlayer, iMenu);
-				return PLUGIN_HANDLED;
-			}
-		}
-		case 1: {
-			if(get_member_game(m_bGameStarted)) {
-				client_print_color(pPlayer, pPlayer, "%L", LANG_PLAYER, "CW_PRINT_ID_GAME_ALREADY_STARTED");
-				menu_display(pPlayer, iMenu);
-				return PLUGIN_HANDLED;
-			}
+    switch (iItem) {
+        case 0: {
+            if (get_user_flags(pPlayer) & ADMIN_IMMUNITY) {
+                @cw_adminmenu(pPlayer);
+            } else {
+                menu_display(pPlayer, iMenu);
+            }
+            return PLUGIN_HANDLED;
+        }
+        case 1: {
+            if (get_member_game(m_bGameStarted)) {
+                client_print_color(pPlayer, pPlayer, "%L", LANG_PLAYER, "CW_PRINT_ID_GAME_ALREADY_STARTED");
+            } else {
+                @StartCw_Settings();
+                client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_KNIFE_ROUND_STARTED");
+            }
+        }
+        case 2: {
+            if (!get_member_game(m_bGameStarted)) {
+                client_print_color(pPlayer, pPlayer, "%L", LANG_PLAYER, "CW_PRINT_ID_GAME_NOT_STARTED");
+            } else {
+                @StartWarmup_Settings();
+                client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_WARMUP_STARTED");
+            }
+        }
+        case 3: {
+            client_cmd(pPlayer, "messagemode changemap");
+            return PLUGIN_HANDLED;
+        }
+        case 4: {
+            menu_display(pPlayer, iMenu);
+            return PLUGIN_HANDLED;
+        }
+        case 5: {
+            client_cmd(pPlayer, "messagemode setpassword");
+            return PLUGIN_HANDLED;
+        }
+        case 6: {
+            if (g_szCvar_Sv_Password[0] != EOS) {
+                set_pcvar_string(get_cvar_pointer("sv_password"), "");
+                client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_REMOVE_PASSWORD", pPlayer);
+            } else {
+                client_print_color(pPlayer, pPlayer, "%L", LANG_PLAYER, "CW_PRINT_NO_PASSWORD_SET");
+            }
+            return PLUGIN_HANDLED;
+        }
+    }
 
-			@StartCw_Settings();
-			client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_KNIFE_ROUND_STARTED");
-		}
-		case 2: {
-			if(!get_member_game(m_bGameStarted)) {
-				client_print_color(pPlayer, pPlayer, "%L", LANG_PLAYER, "CW_PRINT_ID_GAME_NOT_STARTED");
-				menu_display(pPlayer, iMenu);
-				return PLUGIN_HANDLED;
-			}
-
-			@StartWarmup_Settings();
-			client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_WARMUP_STARTED");
-		}
-		case 3: {
-			client_cmd(pPlayer, "messagemode changemap");
-		}
-		case 4: {
-			menu_display(pPlayer, iMenu);
-			return PLUGIN_HANDLED;
-		}
-		case 5: {
-			client_cmd(pPlayer, "messagemode setpassword");
-		}
-		case 6: {
-			set_pcvar_string(get_cvar_pointer("sv_password"), "");
-			client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_REMOVE_PASSWORD", pPlayer);
-		}
-	}
-	menu_destroy(iMenu);
-	return PLUGIN_HANDLED;
+    menu_destroy(iMenu);
+    return PLUGIN_HANDLED;
 }
 
 @cw_adminmenu(const pPlayer) {
