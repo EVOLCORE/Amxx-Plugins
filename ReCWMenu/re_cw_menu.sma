@@ -239,6 +239,18 @@ public client_disconnected(id) {
 	return FMRES_SUPERCEDE;
 }
 
+@CBasePlayer_MakeBomber_Pre(const id) {
+    if (!is_user_bot(id)) {
+        SetHookChainArg(1, ATYPE_INTEGER, getRealPlayer());
+    }
+}
+
+getRealPlayer() {
+    new data[MAX_PLAYERS], players;
+    get_players(data, players, "aceh", "TERRORIST");
+    return data[random(players)];
+}
+
 @CBasePlayer_AddPlayerItem_Pre(const pPlayer, const iItem) {
 	if(get_member(iItem, m_iId) != WEAPON_KNIFE) {
 		SetHookChainReturn(ATYPE_INTEGER, false);
@@ -353,7 +365,7 @@ client_print_team(const pPlayer, const szMessage[]) {
 		return;
 	}
 
-	if (abs(iTWin - iCTWin) >= 2 && max(iTWin, iCTWin) >= 15) {
+	if (abs(iTWin - iCTWin) >= 4 && max(iTWin, iCTWin) >= 16) {
 		client_print_color(0, 0, "%L", LANG_PLAYER, (iTWin > iCTWin) ? "CW_PRINT_ALL_TERRS_WIN" : "CW_PRINT_ALL_CTS_WIN");
 		show_dhudmessage(0, "%L", LANG_PLAYER, (iTWin > iCTWin) ? "CW_DHUD_ALL_TERRS_WIN" : "CW_DHUD_ALL_CTS_WIN");
 		set_pcvar_num(get_cvar_pointer("sv_restart"), 3);
@@ -384,7 +396,7 @@ client_print_team(const pPlayer, const szMessage[]) {
             }
             rg_round_setup(pPlayer, false);
         }
-    } else if (iRound >= 32 && iRound <= 60 && iRound % 2 == 0) {
+    } else if (iRound >= 30 && iRound % 3 == 0) {
         rg_swap_all_players();
         client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_SWAP_TEAMS");
         for (new pPlayer = 1; pPlayer <= MaxClients; pPlayer++) {
@@ -492,10 +504,10 @@ stock rg_round_setup(pPlayer, bHighMoney) {
     rg_remove_all_items(pPlayer);
     rg_set_user_armor(pPlayer, 0, ARMOR_NONE);
     rg_give_default_items(pPlayer);
-    rg_add_account(pPlayer, bHighMoney ? 16000 : 800, AS_SET);
-
-    new players[32], countPlayers;
-    get_players(players, countPlayers, "aceh", "TERRORIST");
-    if(countPlayers)
-        rg_give_item(players[random_num(0, countPlayers - 1)], "weapon_c4", GT_REPLACE);
+    rg_add_account(pPlayer, bHighMoney ? 10000 : 800, AS_SET);
+    
+    new bomber = getRealPlayer();
+    if (pPlayer == bomber) {
+        rg_give_item(pPlayer, "weapon_c4");
+    }
 }
