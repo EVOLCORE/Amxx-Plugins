@@ -37,6 +37,8 @@ new Array:g_aWarmUp,
 
 new g_szCvar_Sv_Password[32],
 	g_iVotes[2];
+new g_bOvertimeStarted = 0;
+new g_iOvertimeRounds = 0;	
 
 new bool:b_talk = false;
 
@@ -62,7 +64,6 @@ public plugin_init() {
 	DisableHookChain((g_iHC_ShowVGUIMenu_Pre = RegisterHookChain(RG_ShowVGUIMenu, "@ShowVGUIMenu_Pre", .post = false)));
 	DisableHookChain((g_iHC_HandleMenu_ChooseTeam_Pre = RegisterHookChain(RG_HandleMenu_ChooseTeam, "@HandleMenu_ChooseTeam_Pre", .post = false)));
 	DisableHookChain((g_iHC_Spawn_Post = RegisterHookChain(RG_CBasePlayer_Spawn, "@CBasePlayer_Spawn_Post", .post = true)));
-	RegisterHookChain(RG_CBasePlayer_MakeBomber, "@CBasePlayer_MakeBomber_Pre", false);
 
 	bind_pcvar_string(get_cvar_pointer("sv_password"), g_szCvar_Sv_Password, charsmax(g_szCvar_Sv_Password));
 
@@ -91,7 +92,7 @@ public client_disconnected(id) {
 
 /*@score(pPlayer) {
 	set_member_game(m_iNumCTWins, 14);
-    set_member_game(m_iNumTerroristWins, 0);
+    set_member_game(m_iNumTerroristWins, 15);
 
 	client_print_color(0, 0, "Half-time test");
     return PLUGIN_HANDLED;
@@ -276,18 +277,6 @@ public client_disconnected(id) {
 	return FMRES_SUPERCEDE;
 }
 
-@CBasePlayer_MakeBomber_Pre(const id) {
-    if (!is_user_bot(id)) {
-        SetHookChainArg(1, ATYPE_INTEGER, getRealPlayer());
-    }
-}
-
-getRealPlayer() {
-    new data[MAX_PLAYERS], players;
-    get_players(data, players, "aceh", "TERRORIST");
-    return data[random(players)];
-}
-
 @CBasePlayer_AddPlayerItem_Pre(const pPlayer, const iItem) {
 	if(get_member(iItem, m_iId) != WEAPON_KNIFE) {
 		SetHookChainReturn(ATYPE_INTEGER, false);
@@ -386,32 +375,75 @@ client_print_team(const pPlayer, const szMessage[]) {
 }
 
 @RoundEnd_Post(WinStatus:status, ScenarioEventEndRound:event, Float:tmDelay) {
-	new iCTWin = get_member_game(m_iNumCTWins);
-	new iTWin = get_member_game(m_iNumTerroristWins);
+    new iCTWin = get_member_game(m_iNumCTWins);
+    new iTWin = get_member_game(m_iNumTerroristWins);
+    new scoreDiff = rg_get_team_score_diff();
 
-	set_dhudmessage(255, 0, 0, -1.0, 0.34, .holdtime = 3.0);
+    set_dhudmessage(255, 0, 0, -1.0, 0.34, .holdtime = 3.0);
 
-	if(iCTWin + iTWin == 15) {
-		for(new pPlayer = 1; pPlayer <= MaxClients; pPlayer++) {
-			if(!is_user_alive(pPlayer)) {
-				continue;
-			}
+    if (iCTWin == 15 && iTWin == 15 && !g_bOvertimeStarted) {
+        g_bOvertimeStarted = 1;
+        g_iOvertimeRounds = 0;
+        rg_swap_all_players();
+        show_dhudmessage(0, "%L", LANG_PLAYER, "CW_DHUD_ALL_OVERTIME");
 
-			set_entvar(pPlayer, var_flags, get_entvar(pPlayer, var_flags) | FL_FROZEN);
-		}
-		return;
-	}
+	for (new pPlayer = 1; pPlayer <= MaxClients; pPlayer++) {
+        if (!is_user_alive(pPlayer)) {
+            continue;
+        }
+        rg_round_setup(pPlayer, true);
+        }
+        return;
+    }
 
-	if (abs(iTWin - iCTWin) >= 4 && max(iTWin, iCTWin) >= 16) {
-		client_print_color(0, 0, "%L", LANG_PLAYER, (iTWin > iCTWin) ? "CW_PRINT_ALL_TERRS_WIN" : "CW_PRINT_ALL_CTS_WIN");
-		show_dhudmessage(0, "%L", LANG_PLAYER, (iTWin > iCTWin) ? "CW_DHUD_ALL_TERRS_WIN" : "CW_DHUD_ALL_CTS_WIN");
-		set_pcvar_num(get_cvar_pointer("sv_restart"), 3);
-		@StartWarmup_Settings();
-		client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_MATCH_END");
-	} 
-	else if (iTWin == iCTWin && iTWin == 15) {
-		show_dhudmessage(0, "%L", LANG_PLAYER, "CW_DHUD_ALL_OVERTIME");
-	}
+    if (g_bOvertimeStarted) {
+        if (scoreDiff >= 4) {
+            client_print_color(0, 0, "%L", LANG_PLAYER, (iTWin > iCTWin) ? "CW_PRINT_ALL_TERRS_WIN" : "CW_PRINT_ALL_CTS_WIN");
+            show_dhudmessage(0, "%L", LANG_PLAYER, (iTWin > iCTWin) ? "CW_DHUD_ALL_TERRS_WIN" : "CW_DHUD_ALL_CTS_WIN");
+            set_pcvar_num(get_cvar_pointer("sv_restart"), 3); 
+            @StartWarmup_Settings();
+            client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_MATCH_END");
+            g_bOvertimeStarted = 0;
+            return;
+        }
+
+        g_iOvertimeRounds++;
+        if (g_iOvertimeRounds >= 3) {
+            rg_swap_all_players();
+            client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_SWAP_TEAMS");
+
+            for (new pPlayer = 1; pPlayer <= MaxClients; pPlayer++) {
+                if (!is_user_alive(pPlayer)) {
+                    continue;
+                }
+                rg_round_setup(pPlayer, true);
+            }
+            g_iOvertimeRounds = 0;
+        }
+        return;
+    }
+
+    if (iCTWin == 16 || iTWin == 16) {
+        client_print_color(0, 0, "%L", LANG_PLAYER, (iTWin > iCTWin) ? "CW_PRINT_ALL_TERRS_WIN" : "CW_PRINT_ALL_CTS_WIN");
+        show_dhudmessage(0, "%L", LANG_PLAYER, (iTWin > iCTWin) ? "CW_DHUD_ALL_TERRS_WIN" : "CW_DHUD_ALL_CTS_WIN");
+        set_pcvar_num(get_cvar_pointer("sv_restart"), 3);
+        @StartWarmup_Settings();
+        client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_MATCH_END");
+    }
+
+    new iRound = iCTWin + iTWin;
+    if (iRound == 15) {
+        client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_SECOND_HALF");
+        rg_swap_all_players();
+        client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_SWAP_TEAMS");
+
+        for (new pPlayer = 1; pPlayer <= MaxClients; pPlayer++) {
+            if (!is_user_alive(pPlayer)) {
+                continue;
+            }
+            rg_round_setup(pPlayer, false);
+        }
+    }
 }
 
 @RG_CSGameRules_RestartRound_Post() {
@@ -423,31 +455,12 @@ client_print_team(const pPlayer, const szMessage[]) {
         for (new i = 0; i < 3; i++) {
             client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_LIVE");
         }
-    } else if (iRound == 15) {
-        client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_SECOND_HALF");
-        rg_swap_all_players();
-        client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_SWAP_TEAMS");
-        for (new pPlayer = 1; pPlayer <= MaxClients; pPlayer++) {
-            if (!is_user_alive(pPlayer)) {
-                continue;
-            }
-            rg_round_setup(pPlayer, false);
-        }
-    } else if (iRound >= 30 && iRound % 3 == 0) {
-        rg_swap_all_players();
-        client_print_color(0, 0, "%L", LANG_PLAYER, "CW_PRINT_ALL_SWAP_TEAMS");
-        for (new pPlayer = 1; pPlayer <= MaxClients; pPlayer++) {
-            if (!is_user_alive(pPlayer)) {
-                continue;
-            }
-            rg_round_setup(pPlayer, true);
-        }
     } else {
-		new teamPrintColor = (iCTWin > iTWin) ? print_team_blue : (iTWin > iCTWin) ? print_team_red : print_team_grey;
-		new message[191];
-		formatex(message, sizeof(message), "CW_PRINT_ALL_ROUNDSTART_%s", (iCTWin > iTWin) ? "CTWIN" : (iTWin > iCTWin) ? "TWIN" : "DRAW");
-		client_print_color(0, teamPrintColor, "%L", LANG_PLAYER, message, iTWin, iCTWin);
-	}
+        new teamPrintColor = (iCTWin > iTWin) ? print_team_blue : (iTWin > iCTWin) ? print_team_red : print_team_grey;
+        new message[191];
+        formatex(message, sizeof(message), "CW_PRINT_ALL_ROUNDSTART_%s", (iCTWin > iTWin) ? "CTWIN" : (iTWin > iCTWin) ? "TWIN" : "DRAW");
+        client_print_color(0, teamPrintColor, "%L", LANG_PLAYER, message, iTWin, iCTWin);
+    }
 }
 
 @ShowVGUIMenu_Pre(const pPlayer, const VGUIMenu:menuType) {
@@ -542,9 +555,8 @@ stock rg_round_setup(pPlayer, bHighMoney) {
     rg_set_user_armor(pPlayer, 0, ARMOR_NONE);
     rg_give_default_items(pPlayer);
     rg_add_account(pPlayer, bHighMoney ? 10000 : 800, AS_SET);
-    
-    new bomber = getRealPlayer();
-    if (pPlayer == bomber) {
-        rg_give_item(pPlayer, "weapon_c4");
-    }
+}
+
+stock rg_get_team_score_diff() {
+    return abs(get_member_game(m_iNumTerroristWins) - get_member_game(m_iNumCTWins));
 }
